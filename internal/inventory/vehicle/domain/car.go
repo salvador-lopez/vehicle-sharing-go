@@ -12,6 +12,11 @@ type CarRepository interface {
 	Create(context.Context, *Car) error
 }
 
+//go:generate mockgen -destination=mock/vin_validator_mock.go -package=mock . VinValidator
+type VinValidator interface {
+	Validate(number string) error
+}
+
 type VIN struct {
 	number string
 }
@@ -22,13 +27,6 @@ func NewVIN(number string, validator VinValidator) (*VIN, error) {
 		return nil, err
 	}
 	return &VIN{number: number}, nil
-}
-
-
-
-//go:generate mockgen -destination=mock/vin_validator_mock.go -package=mock . VinValidator
-type VinValidator interface {
-	Validate(number string) error
 }
 
 type Car struct {
