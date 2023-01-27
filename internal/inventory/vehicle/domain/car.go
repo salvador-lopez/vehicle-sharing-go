@@ -1,4 +1,4 @@
-package vehicle
+package domain
 
 import (
 	"context"
@@ -22,6 +22,30 @@ type Car struct {
 	color            string
 	engineType       string
 	transmissionType string
+}
+
+func NewCar(
+	id uuid.UUID,
+	vin string,
+	brandName string,
+	brandModel string,
+	color string,
+	engineType string,
+	transmissionType string,
+	nowFun func() time.Time,
+) *Car {
+	now := nowFun()
+	return &Car{
+		id:               id,
+		createdAt:        now,
+		updatedAt:        now,
+		vin:              vin,
+		brandName:        brandName,
+		brandModel:       brandModel,
+		color:            color,
+		engineType:       engineType,
+		transmissionType: transmissionType,
+	}
 }
 
 func HydrateCar(

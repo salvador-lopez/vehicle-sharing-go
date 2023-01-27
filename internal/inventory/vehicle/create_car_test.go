@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"vehicle-sharing-go/internal/inventory/vehicle"
-	"vehicle-sharing-go/internal/inventory/vehicle/mock"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/mock"
 )
 
 type vehicleUnitSuite struct {
@@ -50,7 +51,7 @@ func (s *vehicleUnitSuite) TestCreateCar() {
 
 	id := uuid.New()
 
-	expectedCar := vehicle.HydrateCar(id, s.now, s.now, vin, brandName, brandModel, color, engineType, transmissionType)
+	expectedCar := domain.HydrateCar(id, s.now, s.now, vin, brandName, brandModel, color, engineType, transmissionType)
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
