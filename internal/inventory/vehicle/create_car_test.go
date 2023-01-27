@@ -40,29 +40,14 @@ func TestVehicleUnitSuite(t *testing.T) {
 }
 
 func (s *vehicleUnitSuite) TestCreateCar() {
-	const (
-		vin              = "4Y1SL65848Z411439"
-		brandName        = "Mercedes"
-		brandModel       = "C Class"
-		color            = "Blue Espectral"
-		engineType       = "Mild Hybrid"
-		transmissionType = "Automatic"
-	)
+	const vin = "4Y1SL65848Z411439"
 
 	id := uuid.New()
 
-	expectedCar := domain.HydrateCar(id, s.now, s.now, vin, brandName, brandModel, color, engineType, transmissionType)
+	expectedCar := domain.HydrateCar(id, s.now, s.now, vin)
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
-	err := s.sut.Handle(s.ctx, &vehicle.CreateCarCommand{
-		ID:               id,
-		VIN:              vin,
-		BrandName:        brandName,
-		BrandModel:       brandModel,
-		Color:            color,
-		EngineType:       engineType,
-		TransmissionType: transmissionType,
-	})
+	err := s.sut.Handle(s.ctx, &vehicle.CreateCarCommand{ID: id, VIN: vin})
 	s.Require().NoError(err)
 }

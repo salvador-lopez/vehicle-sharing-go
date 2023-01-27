@@ -13,61 +13,26 @@ type CarRepository interface {
 }
 
 type Car struct {
-	id               uuid.UUID
-	createdAt        time.Time
-	updatedAt        time.Time
-	vin              string
-	brandName        string
-	brandModel       string
-	color            string
-	engineType       string
-	transmissionType string
+	id        uuid.UUID
+	createdAt time.Time
+	updatedAt time.Time
+	vin       string
 }
 
 func NewCar(
 	id uuid.UUID,
 	vin string,
-	brandName string,
-	brandModel string,
-	color string,
-	engineType string,
-	transmissionType string,
 	nowFun func() time.Time,
 ) *Car {
 	now := nowFun()
-	return &Car{
-		id:               id,
-		createdAt:        now,
-		updatedAt:        now,
-		vin:              vin,
-		brandName:        brandName,
-		brandModel:       brandModel,
-		color:            color,
-		engineType:       engineType,
-		transmissionType: transmissionType,
-	}
+	return &Car{id, now, now, vin}
 }
 
 func HydrateCar(
 	id uuid.UUID,
 	createdAt,
 	updatedAt time.Time,
-	vin,
-	brandName,
-	brandModel,
-	color,
-	engineType,
-	transmissionType string,
+	vin string,
 ) *Car {
-	return &Car{
-		id,
-		createdAt,
-		updatedAt,
-		vin,
-		brandName,
-		brandModel,
-		color,
-		engineType,
-		transmissionType,
-	}
+	return &Car{id, createdAt, updatedAt, vin}
 }

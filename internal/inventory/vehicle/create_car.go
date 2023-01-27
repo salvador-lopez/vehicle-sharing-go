@@ -10,13 +10,8 @@ import (
 )
 
 type CreateCarCommand struct {
-	ID               uuid.UUID
-	VIN              string
-	BrandName        string
-	BrandModel       string
-	Color            string
-	EngineType       string
-	TransmissionType string
+	ID  uuid.UUID
+	VIN string
 }
 
 type CreateCarHandler struct {
@@ -31,6 +26,6 @@ func NewCreateCarHandler(nowFun func() time.Time, carRepo domain.CarRepository) 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCarCommand) error {
 	return h.carRepo.Create(
 		ctx,
-		domain.NewCar(cmd.ID, cmd.VIN, cmd.BrandName, cmd.BrandModel, cmd.Color, cmd.EngineType, cmd.TransmissionType, h.nowFun),
+		domain.NewCar(cmd.ID, cmd.VIN, h.nowFun),
 	)
 }
