@@ -16,19 +16,21 @@ import (
 
 type createCarUnitSuite struct {
 	suite.Suite
-	ctx         context.Context
-	mockCtrl    *gomock.Controller
-	now         time.Time
-	mockCarRepo *mock.MockCarRepository
-	sut         *command.CreateCarHandler
+	ctx              context.Context
+	mockCtrl         *gomock.Controller
+	now              time.Time
+	mockVinValidator *mock.MockVinValidator
+	mockCarRepo      *mock.MockCarRepository
+	sut              *command.CreateCarHandler
 }
 
 func (s *createCarUnitSuite) SetupTest() {
 	s.ctx = context.Background()
 	s.now = time.Now()
 	s.mockCtrl = gomock.NewController(s.T())
+	s.mockVinValidator = mock.NewMockVinValidator(s.mockCtrl)
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
-	s.sut = command.NewCreateCarHandler(func() time.Time { return s.now }, s.mockCarRepo)
+	s.sut = command.NewCreateCarHandler(func() time.Time { return s.now }, s.mockVinValidator, s.mockCarRepo)
 }
 
 func (s *createCarUnitSuite) TearDownTest() {
@@ -49,6 +51,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 
 	expectedCar := domain.HydrateCar(id, s.now, s.now, vin, color)
 
+	s.mockVinValidator.EXPECT().Validate(vin).Return(nil)
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
 	err := s.sut.Handle(s.ctx, &command.CreateCar{ID: id, VIN: vin, Color: color})
