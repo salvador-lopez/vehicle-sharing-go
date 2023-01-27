@@ -1,4 +1,4 @@
-package vehicle
+package command
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 )
 
-type CreateCarCommand struct {
+type CreateCar struct {
 	ID  uuid.UUID
 	VIN string
 }
@@ -23,7 +23,7 @@ func NewCreateCarHandler(nowFun func() time.Time, carRepo domain.CarRepository) 
 	return &CreateCarHandler{nowFun: nowFun, carRepo: carRepo}
 }
 
-func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCarCommand) error {
+func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	return h.carRepo.Create(
 		ctx,
 		domain.NewCar(cmd.ID, cmd.VIN, h.nowFun),

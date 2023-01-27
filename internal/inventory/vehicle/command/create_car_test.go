@@ -1,4 +1,4 @@
-package vehicle_test
+package command_test
 
 import (
 	"context"
@@ -9,37 +9,37 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	"vehicle-sharing-go/internal/inventory/vehicle"
+	"vehicle-sharing-go/internal/inventory/vehicle/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/mock"
 )
 
-type vehicleUnitSuite struct {
+type createCarUnitSuite struct {
 	suite.Suite
 	ctx         context.Context
 	mockCtrl    *gomock.Controller
 	now         time.Time
 	mockCarRepo *mock.MockCarRepository
-	sut         *vehicle.CreateCarHandler
+	sut         *command.CreateCarHandler
 }
 
-func (s *vehicleUnitSuite) SetupTest() {
+func (s *createCarUnitSuite) SetupTest() {
 	s.ctx = context.Background()
 	s.now = time.Now()
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
-	s.sut = vehicle.NewCreateCarHandler(func() time.Time { return s.now }, s.mockCarRepo)
+	s.sut = command.NewCreateCarHandler(func() time.Time { return s.now }, s.mockCarRepo)
 }
 
-func (s *vehicleUnitSuite) TearDownTest() {
+func (s *createCarUnitSuite) TearDownTest() {
 	s.mockCtrl.Finish()
 }
 
 func TestVehicleUnitSuite(t *testing.T) {
-	suite.Run(t, new(vehicleUnitSuite))
+	suite.Run(t, new(createCarUnitSuite))
 }
 
-func (s *vehicleUnitSuite) TestCreateCar() {
+func (s *createCarUnitSuite) TestCreateCar() {
 	const vin = "4Y1SL65848Z411439"
 
 	id := uuid.New()
@@ -48,6 +48,6 @@ func (s *vehicleUnitSuite) TestCreateCar() {
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
-	err := s.sut.Handle(s.ctx, &vehicle.CreateCarCommand{ID: id, VIN: vin})
+	err := s.sut.Handle(s.ctx, &command.CreateCar{ID: id, VIN: vin})
 	s.Require().NoError(err)
 }
