@@ -61,3 +61,13 @@ func (s *createCarUnitSuite) TestCreateCar() {
 	err := s.sut.Handle(s.ctx, &command.CreateCar{ID: id, VIN: vin, Color: color})
 	s.Require().NoError(err)
 }
+
+func (s *createCarUnitSuite) TestCreateCarVINValidatorReturnErr() {
+	const invalidVin = "invalid-vin"
+
+	expectedErr := domain.ErrInvalidVin
+
+	s.mockVinValidator.EXPECT().Validate(invalidVin).Return(expectedErr)
+	err := s.sut.Handle(s.ctx, &command.CreateCar{ID: uuid.New(), VIN: invalidVin, Color: "Spectral Blue"})
+	s.Require().EqualError(err, expectedErr.Error())
+}

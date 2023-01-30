@@ -26,7 +26,10 @@ func NewCreateCarHandler(nowFun func() time.Time, vinValidator domain.VinValidat
 }
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
-	vin, _ := domain.NewVIN(cmd.VIN, h.vinValidator)
+	vin, err := domain.NewVIN(cmd.VIN, h.vinValidator)
+	if err != nil {
+		return err
+	}
 	car := domain.NewCar(cmd.ID, vin, cmd.Color, h.nowFun)
 
 	_ = h.carRepo.Create(ctx, car)

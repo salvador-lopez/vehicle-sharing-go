@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,8 @@ import (
 type CarRepository interface {
 	Create(context.Context, *Car) error
 }
+
+var ErrInvalidVin = errors.New("invalid vin provided")
 
 //go:generate mockgen -destination=mock/vin_validator_mock.go -package=mock . VinValidator
 type VinValidator interface {
