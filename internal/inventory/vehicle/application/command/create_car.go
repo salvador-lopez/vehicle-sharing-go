@@ -16,17 +16,16 @@ type CreateCar struct {
 }
 
 type CreateCarHandler struct {
-	nowFun       func() time.Time
-	vinValidator domain.VinValidator
-	carRepo      domain.CarRepository
+	nowFun  func() time.Time
+	carRepo domain.CarRepository
 }
 
-func NewCreateCarHandler(nowFun func() time.Time, vinValidator domain.VinValidator, carRepo domain.CarRepository) *CreateCarHandler {
-	return &CreateCarHandler{nowFun: nowFun, vinValidator: vinValidator, carRepo: carRepo}
+func NewCreateCarHandler(nowFun func() time.Time, carRepo domain.CarRepository) *CreateCarHandler {
+	return &CreateCarHandler{nowFun: nowFun, carRepo: carRepo}
 }
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
-	vin, err := domain.NewVIN(cmd.VIN, h.vinValidator)
+	vin, err := domain.NewVIN(cmd.VIN)
 	if err != nil {
 		return err
 	}
