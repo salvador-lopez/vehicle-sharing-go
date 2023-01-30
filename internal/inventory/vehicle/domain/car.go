@@ -46,19 +46,3 @@ func NewCar(
 	now := nowFun()
 	return &Car{id, now, now, vin, color}
 }
-
-func HydrateCar(
-	id uuid.UUID,
-	createdAt,
-	updatedAt time.Time,
-	vinNumber string,
-	color string,
-) *Car {
-	return &Car{
-		id,
-		createdAt,
-		updatedAt,
-		&VIN{vinNumber},
-		color,
-	}
-}

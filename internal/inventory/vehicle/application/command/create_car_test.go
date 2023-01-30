@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	"vehicle-sharing-go/internal/inventory/vehicle/command"
+	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/mock"
 )
@@ -49,7 +49,11 @@ func (s *createCarUnitSuite) TestCreateCar() {
 
 	id := uuid.New()
 
-	expectedCar := domain.HydrateCar(id, s.now, s.now, vin, color)
+	expectedCar := domain.HydrateCar(&domain.CarDTO{
+		VIN:     vin,
+		Color:   color,
+		BaseDTO: &domain.BaseDTO{ID: id, CreatedAt: s.now, UpdatedAt: s.now},
+	})
 
 	s.mockVinValidator.EXPECT().Validate(vin).Return(nil)
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
