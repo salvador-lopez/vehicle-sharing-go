@@ -31,7 +31,5 @@ func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	}
 	car := domain.NewCar(cmd.ID, vin, cmd.Color, h.nowFun)
 
-	_ = h.carRepo.Create(ctx, car)
-
-	return nil
+	return h.carRepo.Create(ctx, car)
 }
