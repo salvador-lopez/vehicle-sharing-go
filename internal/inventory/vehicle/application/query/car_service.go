@@ -1,6 +1,10 @@
 package query
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 //go:generate mockgen -destination=mock/car_service_mock.go -package=mock . CarService
 type CarService interface {
@@ -9,6 +13,8 @@ type CarService interface {
 
 type Car struct {
 	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 	VIN           string
 	Country       string
 	Manufacturer  string
