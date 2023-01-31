@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  mysql-inventory:
+    platform: linux/x86_64
+    image: mysql:8.0.26
+    volumes:
+      - inventory-db-data:/var/lib/mysql
+      - ./docker/mysql/inventory-init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: inventory
+      MYSQL_USER: inventory
+      MYSQL_PASSWORD: inventory
+    cap_add:
+      - SYS_NICE  # CAP_SYS_NICE
+    ports:
+      - "3308:3306"
+
+volumes:
+  inventory-db-data:

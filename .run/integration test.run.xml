@@ -2,8 +2,15 @@
   <configuration default="false" name="integration test" type="GoTestRunConfiguration" factoryName="Go Test">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
-    <go_parameters value="-tags=integration -p 1 -race" />
-    <kind value="DIRECTORY" />
+    <go_parameters value="-tags=integration_inventory -p 1" />
+    <envs>
+      <env name="MYSQL_DATABASE" value="inventory" />
+      <env name="MYSQL_HOST" value="localhost" />
+      <env name="MYSQL_PASSWORD" value="inventory" />
+      <env name="MYSQL_USER" value="inventory" />
+      <env name="MYSQL_PORT" value="3308" />
+    </envs>
+    <kind value="PACKAGE" />
     <package value="vehicle-sharing-go/test/integration/inventory/infrastructure/database/gorm" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
