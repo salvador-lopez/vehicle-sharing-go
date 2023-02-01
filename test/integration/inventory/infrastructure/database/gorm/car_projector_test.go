@@ -12,21 +12,21 @@ import (
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 )
 
-type carServiceIntegrationSuite struct {
+type carProjectorIntegrationSuite struct {
 	carProjectionSuite
-	sut *gormvehicle.CarService
+	sut *gormvehicle.CarProjector
 }
 
-func (s *carServiceIntegrationSuite) SetupSuite() {
+func (s *carProjectorIntegrationSuite) SetupSuite() {
 	s.carProjectionSuite.SetupSuite()
-	s.sut = gormvehicle.NewCarService(s.db)
+	s.sut = gormvehicle.NewCarProjector(s.db)
 }
 
-func TestCarServiceIntegrationSuite(t *testing.T) {
-	suite.Run(t, new(carServiceIntegrationSuite))
+func TestCarProjectorIntegrationSuite(t *testing.T) {
+	suite.Run(t, new(carProjectorIntegrationSuite))
 }
 
-func (s *carServiceIntegrationSuite) TestFind() {
+func (s *carProjectorIntegrationSuite) TestProject() {
 	carProjectionExpected := &projection.Car{
 		ID:            s.carId,
 		CreatedAt:     time.Now(),
@@ -41,10 +41,12 @@ func (s *carServiceIntegrationSuite) TestFind() {
 		Year:          "2012",
 		AssemblyPlant: "-",
 		SN:            "411439",
+		Color:         "Spectral Blue",
 	}
-	s.Require().NoError(s.db.WithContext(s.ctx).Create(carProjectionExpected).Error)
+	s.Require().NoError(s.sut.Project(s.ctx, carProjectionExpected))
 
-	carProjection, err := s.sut.Find(s.ctx, s.carId)
-	s.Require().NoError(err)
+	var carProjection *projection.Car
+	s.Require().NoError(s.db.WithContext(s.ctx).Find(&carProjection, s.carId).Error)
+
 	s.requireEqualProjections(carProjectionExpected, carProjection)
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"vehicle-sharing-go/internal/inventory/vehicle/application/query/projection"
+	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
 )
 
 type CarService struct {

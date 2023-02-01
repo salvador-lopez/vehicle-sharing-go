@@ -1,6 +1,7 @@
 package projection
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,7 +9,7 @@ import (
 
 //go:generate mockgen -destination=mock/car_projector_mock.go -package=mock . CarProjector
 type CarProjector interface {
-	Project(car *Car) error
+	Project(ctx context.Context, car *Car) error
 }
 
 type Car struct {
@@ -25,4 +26,5 @@ type Car struct {
 	Year          string `gorm:"type:varchar(255)"`
 	AssemblyPlant string `gorm:"type:varchar(255)"`
 	SN            string `gorm:"type:varchar(255)"`
+	Color         string `gorm:"type:varchar(255)"`
 }
