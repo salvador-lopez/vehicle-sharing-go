@@ -1,17 +1,14 @@
 //go:build integration_inventory
 
-package gorm_test
+package gorm
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
@@ -35,20 +32,8 @@ func (s *carRepoIntegrationSuite) SetupSuite() {
 }
 
 func (s *carRepoIntegrationSuite) initDb() {
-	dsn := fmt.Sprintf(`%s:%s@(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=UTC`,
-		os.Getenv("MYSQL_USER"),
-		os.Getenv("MYSQL_PASSWORD"),
-		os.Getenv("MYSQL_HOST"),
-		os.Getenv("MYSQL_PORT"),
-		os.Getenv("MYSQL_DATABASE"),
-	)
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	s.Require().NoError(err)
-
-	s.Require().NoError(db.AutoMigrate(&model.Car{}))
-
-	s.db = db
+	s.db = createDb(s.Require())
+	s.Require().NoError(s.db.AutoMigrate(&model.Car{}))
 }
 
 func (s *carRepoIntegrationSuite) SetupTest() {
@@ -93,7 +78,6 @@ func (s *carRepoIntegrationSuite) TestCreateCar() {
 	s.Require().Equal(carDTO.VIN, gormCarStored.VIN)
 	s.Require().Equal(carDTO.Color, gormCarStored.Color)
 
-	tFormat := time.RFC3339
-	s.Require().Equal(carDTO.CreatedAt.UTC().Format(tFormat), gormCarStored.CreatedAt.Format(tFormat))
-	s.Require().Equal(carDTO.UpdatedAt.UTC().Format(tFormat), gormCarStored.UpdatedAt.Format(tFormat))
+	requireEqualDates(carDTO.CreatedAt, gormCarStored.CreatedAt, s.Require())
+	requireEqualDates(carDTO.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
 }
