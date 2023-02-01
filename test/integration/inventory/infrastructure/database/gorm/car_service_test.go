@@ -41,6 +41,7 @@ func (s *carServiceIntegrationSuite) TestFind() {
 		Year:          "2012",
 		AssemblyPlant: "-",
 		SN:            "411439",
+		Color:         "Blue Spectral",
 	}
 	s.Require().NoError(s.db.WithContext(s.ctx).Create(carProjectionExpected).Error)
 

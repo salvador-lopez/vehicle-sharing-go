@@ -40,4 +40,5 @@ func (s *carProjectionSuite) requireEqualProjections(expected *projection.Car, a
 	s.Require().Equal(expected.Year, actual.Year)
 	s.Require().Equal(expected.AssemblyPlant, actual.AssemblyPlant)
 	s.Require().Equal(expected.SN, actual.SN)
+	s.Require().Equal(expected.Color, actual.Color)
 }
