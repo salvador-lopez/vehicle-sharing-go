@@ -2,12 +2,11 @@ package domain
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/google/uuid"
+
+	"vehicle-sharing-go/pkg/domain"
 )
 
 //go:generate mockgen -destination=mock/car_repository_mock.go -package=mock . CarRepository
@@ -15,43 +14,52 @@ type CarRepository interface {
 	Create(context.Context, *Car) error
 }
 
-type VIN struct {
-	number string
-}
-
-func NewVIN(number string) (*VIN, error) {
-	err := guardVIN(number)
-	if err != nil {
-		return nil, err
-	}
-	return &VIN{number: number}, nil
-}
-
-var ErrInvalidVin = errors.New("invalid vin provided")
-
-func guardVIN(number string) error {
-	matches, _ := regexp.Match("^[A-HJ-NPR-Z\\d]{8}[\\dX][A-HJ-NPR-Z\\d]{8}$", []byte(number))
-	if !matches {
-		return fmt.Errorf("%v: %s", ErrInvalidVin, number)
-	}
-
-	return nil
-}
-
 type Car struct {
-	id        uuid.UUID
-	createdAt time.Time
-	updatedAt time.Time
-	vin       *VIN
-	color     string
+	*domain.AggregateRoot
+	vin   *VIN
+	color string
 }
 
 func NewCar(
 	id uuid.UUID,
 	vin *VIN,
 	color string,
-	nowFun func() time.Time,
+	evtIdGen func() uuid.UUID,
+	now func() time.Time,
 ) *Car {
-	now := nowFun()
-	return &Car{id, now, now, vin, color}
+	car := &Car{domain.NewAggregateRoot(id, now), vin, color}
+	car.recordCreatedEvent(evtIdGen(), now())
+
+	return car
+}
+
+func (c *Car) recordCreatedEvent(evtID uuid.UUID, timestamp time.Time) {
+	c.RecordEvent(evtID, "CarCreatedEvent", "Car", &CarCreatedEventPayload{
+		c.vin,
+		c.color,
+		c.CreatedAt(),
+		c.UpdatedAt(),
+	}, timestamp)
+}
+
+type CarDTO struct {
+	VinNumber string `gorm:"type:varchar(255);unique"`
+	Color     string `gorm:"type:varchar(255)"`
+	*domain.AgRootDTO
+}
+
+func (c *CarDTO) ToAggRoot() *Car {
+	return &Car{
+		c.AgRootDTO.ToAggRoot(),
+		&VIN{c.VinNumber},
+		c.Color,
+	}
+}
+
+func (c *Car) ToDTO() *CarDTO {
+	return &CarDTO{
+		c.vin.number,
+		c.color,
+		c.AggregateRoot.ToDTO(),
+	}
 }

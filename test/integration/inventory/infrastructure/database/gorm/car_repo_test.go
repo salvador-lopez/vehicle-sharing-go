@@ -12,6 +12,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm/model"
+	domainpkg "vehicle-sharing-go/pkg/domain"
 )
 
 type carRepoIntegrationSuite struct {
@@ -42,22 +43,22 @@ func TestCarRepoIntegrationSuite(t *testing.T) {
 
 func (s *carRepoIntegrationSuite) TestCreate() {
 	carDTO := &domain.CarDTO{
-		VIN:   "4Y1SL65848Z411439",
-		Color: "Spectral Blue",
-		BaseDTO: &domain.BaseDTO{
+		VinNumber: "4Y1SL65848Z411439",
+		Color:     "Spectral Blue",
+		AgRootDTO: &domainpkg.AgRootDTO{
 			ID:        s.carId,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 	}
-	car := domain.HydrateCar(carDTO)
+	car := carDTO.ToAggRoot()
 	s.Require().NoError(s.sut.Create(s.ctx, car))
 
 	var gormCarStored *model.Car
 	s.db.First(&gormCarStored, s.carId)
 	s.Require().NotNil(gormCarStored.CarDTO)
 
-	s.Require().Equal(carDTO.VIN, gormCarStored.VIN)
+	s.Require().Equal(carDTO.VinNumber, gormCarStored.VinNumber)
 	s.Require().Equal(carDTO.Color, gormCarStored.Color)
 
 	requireEqualDates(carDTO.CreatedAt, gormCarStored.CreatedAt, s.Require())

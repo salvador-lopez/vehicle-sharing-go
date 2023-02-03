@@ -18,7 +18,7 @@ func NewCarRepository(db *gorm.DB) *CarRepository {
 }
 
 func (c *CarRepository) Create(ctx context.Context, car *domain.Car) error {
-	carModel := &model.Car{CarDTO: domain.DeHydrateCar(car)}
+	carModel := &model.Car{CarDTO: car.ToDTO()}
 
 	return c.db.WithContext(ctx).Create(carModel).Error
 }

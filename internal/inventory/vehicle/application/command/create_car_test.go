@@ -16,28 +16,39 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/mock"
+	domainpkg "vehicle-sharing-go/pkg/domain"
+	domainpkgmock "vehicle-sharing-go/pkg/domain/mock"
 )
 
 const (
-	validVin = "4Y1SL65848Z411439"
-	color    = "Spectral Blue"
+	validVinNumber = "4Y1SL65848Z411439"
+	color          = "Spectral Blue"
 )
 
 type createCarUnitSuite struct {
 	suite.Suite
-	ctx         context.Context
-	mockCtrl    *gomock.Controller
-	now         time.Time
-	mockCarRepo *mock.MockCarRepository
-	sut         *command.CreateCarHandler
+	ctx              context.Context
+	mockCtrl         *gomock.Controller
+	idGen            func() uuid.UUID
+	now              func() time.Time
+	mockCarRepo      *mock.MockCarRepository
+	mockEvtPublisher *domainpkgmock.MockEventPublisher
+	sut              *command.CreateCarHandler
 }
 
 func (s *createCarUnitSuite) SetupTest() {
 	s.ctx = context.Background()
-	s.now = time.Now()
+
+	carCreatedEvtID := uuid.New()
+	s.idGen = func() uuid.UUID { return carCreatedEvtID }
+	now := time.Now()
+	s.now = func() time.Time { return now }
+
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
-	s.sut = command.NewCreateCarHandler(func() time.Time { return s.now }, s.mockCarRepo)
+	s.mockEvtPublisher = domainpkgmock.NewMockEventPublisher(s.mockCtrl)
+
+	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo, s.mockEvtPublisher)
 }
 
 func (s *createCarUnitSuite) TearDownTest() {
@@ -50,16 +61,33 @@ func TestVehicleUnitSuite(t *testing.T) {
 
 func (s *createCarUnitSuite) TestCreateCar() {
 	id := uuid.New()
+	now := s.now()
 
-	expectedCar := domain.HydrateCar(&domain.CarDTO{
-		VIN:     validVin,
-		Color:   color,
-		BaseDTO: &domain.BaseDTO{ID: id, CreatedAt: s.now, UpdatedAt: s.now},
-	})
+	recordedEventDTO := &domainpkg.EventDTO{
+		ID:            s.idGen(),
+		AggregateID:   id,
+		AggregateType: "Car",
+		EventType:     "CarCreatedEvent",
+		PayloadDTO: &domain.CarCreatedEventPayloadDTO{
+			VinNumber: validVinNumber,
+			Color:     color,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		Timestamp: now,
+	}
+
+	expectedCar := (&domain.CarDTO{
+		VinNumber: validVinNumber,
+		Color:     color,
+		AgRootDTO: &domainpkg.AgRootDTO{ID: id, CreatedAt: now, UpdatedAt: now, RecordedEvents: []*domainpkg.EventDTO{recordedEventDTO}},
+	}).ToAggRoot()
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
-	err := s.handleSut(id, validVin)
+	s.mockEvtPublisher.EXPECT().Publish(s.ctx, "inventory", []*domainpkg.Event{recordedEventDTO.ToEvent()}).Return(nil)
+
+	err := s.handleSut(id, validVinNumber)
 	s.Require().NoError(err)
 }
 
@@ -120,7 +148,7 @@ func (s *createCarUnitSuite) TestReturnRepositoryErr() {
 	repoErr := errors.New("repository error")
 	s.mockCarRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(repoErr)
 
-	err := s.handleSut(uuid.New(), validVin)
+	err := s.handleSut(uuid.New(), validVinNumber)
 	s.Require().EqualError(err, repoErr.Error())
 }
 
