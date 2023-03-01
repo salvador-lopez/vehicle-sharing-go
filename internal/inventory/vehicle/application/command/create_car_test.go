@@ -55,7 +55,7 @@ func (s *createCarUnitSuite) TearDownTest() {
 	s.mockCtrl.Finish()
 }
 
-func TestVehicleUnitSuite(t *testing.T) {
+func TestCreateCarUnitSuite(t *testing.T) {
 	suite.Run(t, new(createCarUnitSuite))
 }
 
