@@ -19,6 +19,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
+	in_memory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
 	domainpkg "vehicle-sharing-go/pkg/domain"
 )
 
@@ -61,7 +62,10 @@ func main() {
 		carSvc car.Service
 	)
 	{
-		carSvc = rest.NewCarController(command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}, &nopEventPublisher{}))
+		carSvc = rest.NewCarController(
+			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}, &nopEventPublisher{}),
+			in_memory.NewCarService(),
+		)
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services
