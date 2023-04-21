@@ -28,20 +28,22 @@ func TestCarServiceIntegrationSuite(t *testing.T) {
 
 func (s *carServiceIntegrationSuite) TestFind() {
 	carProjectionExpected := &projection.Car{
-		ID:            s.carId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		VIN:           "SCBFR7ZA5CC072256",
-		Country:       "UNITED KINGDOM (UK)",
-		Manufacturer:  "BENTLEY MOTORS LIMITED",
-		Brand:         "BENTLEY",
-		EngineSize:    "6L",
-		FuelType:      "Flexible Fuel Vehicle (FFV)",
-		Model:         "Continental",
-		Year:          "2012",
-		AssemblyPlant: "-",
-		SN:            "411439",
-		Color:         "Blue Spectral",
+		ID:        s.carId,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		VINData: s.buildVinDataProjection(
+			"SCBFR7ZA5CC072256",
+			"UNITED KINGDOM (UK)",
+			"BENTLEY MOTORS LIMITED",
+			"BENTLEY",
+			"6L",
+			"Flexible Fuel Vehicle (FFV)",
+			"Continental",
+			"2012",
+			"-",
+			"411439",
+		),
+		Color: "Blue Spectral",
 	}
 	s.Require().NoError(s.db.WithContext(s.ctx).Create(carProjectionExpected).Error)
 

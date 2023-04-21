@@ -26,6 +26,32 @@ func (s *carProjectionSuite) TearDownTest() {
 	s.databaseSuite.TearDownTest()
 }
 
+func (s *carProjectionSuite) buildVinDataProjection(
+	vinNumber,
+	country,
+	manufacturer,
+	brand,
+	engineSize,
+	fuelType,
+	model,
+	year,
+	assemblyPlant,
+	sn string,
+) *projection.VINData {
+	return &projection.VINData{
+		VIN:           vinNumber,
+		Country:       &country,
+		Manufacturer:  &manufacturer,
+		Brand:         &brand,
+		EngineSize:    &engineSize,
+		FuelType:      &fuelType,
+		Model:         &model,
+		Year:          &year,
+		AssemblyPlant: &assemblyPlant,
+		SN:            &sn,
+	}
+}
+
 func (s *carProjectionSuite) requireEqualProjections(expected *projection.Car, actual *projection.Car) {
 	s.Require().Equal(expected.ID, actual.ID)
 	requireEqualDates(expected.CreatedAt, actual.CreatedAt, s.Require())
