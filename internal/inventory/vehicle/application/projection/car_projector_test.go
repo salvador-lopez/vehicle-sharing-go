@@ -15,18 +15,14 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 )
 
-const (
-	validVinNumber = "4Y1SL65848Z411439"
-	color          = "Spectral Blue"
-)
-
 type carProjectorUnitSuite struct {
 	suite.Suite
-	ctx        context.Context
-	mockCtrl   *gomock.Controller
-	vinDecoder *mock.MockVINDecoder
-	carRepo    *mock.MockCarRepository
-	sut        *projection.CarProjector
+	ctx           context.Context
+	mockCtrl      *gomock.Controller
+	vinDecoder    *mock.MockVINDecoder
+	carRepo       *mock.MockCarRepository
+	carProjection *projection.Car
+	sut           *projection.CarProjector
 }
 
 func (s *carProjectorUnitSuite) SetupTest() {
@@ -35,6 +31,25 @@ func (s *carProjectorUnitSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.vinDecoder = mock.NewMockVINDecoder(s.mockCtrl)
 	s.carRepo = mock.NewMockCarRepository(s.mockCtrl)
+
+	s.carProjection = s.buildCarProjection(
+		uuid.New(),
+		time.Now(),
+		time.Now().Add(time.Second),
+		s.buildVinDataProjection(
+			"4Y1SL65848Z411439",
+			"country",
+			"manufacturer",
+			"brand",
+			"2000",
+			"Gasoline",
+			"Jazz",
+			"2023",
+			"Barcelona",
+			"411439",
+		),
+		"Spectral Blue",
+	)
 
 	s.sut = projection.NewCarProjector(s.vinDecoder, s.carRepo)
 }
@@ -48,88 +63,77 @@ func TestVehicleUnitSuite(t *testing.T) {
 }
 
 func (s *carProjectorUnitSuite) TestProjectCarCreated() {
-	carID := uuid.New()
-	createdAt := time.Now()
-	updatedAt := time.Now().Add(time.Second)
+	s.vinDecoder.EXPECT().Decode(s.ctx, s.carProjection.VIN).Return(s.carProjection.VINData, nil)
+	s.carRepo.EXPECT().Create(s.ctx, s.carProjection).Return(nil)
 
-	vinData := &projection.VINData{
-		VIN:           validVinNumber,
-		Country:       "country",
-		Manufacturer:  "manufacturer",
-		Brand:         "brand",
-		EngineSize:    "2000",
-		FuelType:      "Gasoline",
-		Model:         "Jazz",
-		Year:          "2023",
-		AssemblyPlant: "Barcelona",
-		SN:            "411439",
-	}
-	s.vinDecoder.EXPECT().Decode(s.ctx, validVinNumber).Return(vinData, nil)
-	carProjection := &projection.Car{
-		ID:        carID,
+	s.Require().NoError(s.runSut())
+}
+
+func (s *carProjectorUnitSuite) TestProjectCarCreatedVINDecoderErr() {
+	vinDecoderErr := errors.New("vin decoder error")
+	s.vinDecoder.EXPECT().Decode(s.ctx, s.carProjection.VIN).Return(nil, vinDecoderErr)
+
+	s.Require().EqualError(s.runSut(), vinDecoderErr.Error())
+}
+
+func (s *carProjectorUnitSuite) TestProjectCarCreatedCarRepoCreateErr() {
+	s.vinDecoder.EXPECT().Decode(s.ctx, s.carProjection.VIN).Return(s.carProjection.VINData, nil)
+
+	carRepoCreateErr := errors.New("car repo create error")
+	s.carRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(carRepoCreateErr)
+
+	s.Require().EqualError(s.runSut(), carRepoCreateErr.Error())
+}
+
+func (s *carProjectorUnitSuite) buildCarProjection(
+	id uuid.UUID,
+	createdAt,
+	updatedAt time.Time,
+	vinData *projection.VINData,
+	color string,
+) *projection.Car {
+	return &projection.Car{
+		ID:        id,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 		VINData:   vinData,
 		Color:     color,
 	}
-	s.carRepo.EXPECT().Create(s.ctx, carProjection).Return(nil)
-
-	payload := &domain.CarCreatedEventPayloadDTO{
-		VinNumber: validVinNumber,
-		Color:     color,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}
-
-	s.Require().NoError(s.sut.ProjectCarCreated(s.ctx, carID, payload))
 }
 
-func (s *carProjectorUnitSuite) TestProjectCarCreatedVINDecoderErr() {
-	carID := uuid.New()
-	createdAt := time.Now()
-	updatedAt := time.Now().Add(time.Second)
-
-	vinDecoderErr := errors.New("vin decoder error")
-	s.vinDecoder.EXPECT().Decode(s.ctx, validVinNumber).Return(nil, vinDecoderErr)
-
-	payload := &domain.CarCreatedEventPayloadDTO{
-		VinNumber: validVinNumber,
-		Color:     color,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+func (s *carProjectorUnitSuite) buildVinDataProjection(
+	vinNumber,
+	country,
+	manufacturer,
+	brand,
+	engineSize,
+	fuelType,
+	model,
+	year,
+	assemblyPlant,
+	sn string,
+) *projection.VINData {
+	return &projection.VINData{
+		VIN:           vinNumber,
+		Country:       &country,
+		Manufacturer:  &manufacturer,
+		Brand:         &brand,
+		EngineSize:    &engineSize,
+		FuelType:      &fuelType,
+		Model:         &model,
+		Year:          &year,
+		AssemblyPlant: &assemblyPlant,
+		SN:            &sn,
 	}
-
-	s.Require().EqualError(s.sut.ProjectCarCreated(s.ctx, carID, payload), vinDecoderErr.Error())
 }
 
-func (s *carProjectorUnitSuite) TestProjectCarCreatedCarRepoCreateErr() {
-	carID := uuid.New()
-	createdAt := time.Now()
-	updatedAt := time.Now().Add(time.Second)
-
-	vinData := &projection.VINData{
-		VIN:           validVinNumber,
-		Country:       "country",
-		Manufacturer:  "manufacturer",
-		Brand:         "brand",
-		EngineSize:    "2000",
-		FuelType:      "Gasoline",
-		Model:         "Jazz",
-		Year:          "2023",
-		AssemblyPlant: "Barcelona",
-		SN:            "411439",
-	}
-	s.vinDecoder.EXPECT().Decode(s.ctx, validVinNumber).Return(vinData, nil)
-
-	carRepoCreateErr := errors.New("car repo create error")
-	s.carRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(carRepoCreateErr)
-
+func (s *carProjectorUnitSuite) runSut() error {
 	payload := &domain.CarCreatedEventPayloadDTO{
-		VinNumber: validVinNumber,
-		Color:     color,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		VinNumber: s.carProjection.VIN,
+		Color:     s.carProjection.Color,
+		CreatedAt: s.carProjection.CreatedAt,
+		UpdatedAt: s.carProjection.UpdatedAt,
 	}
 
-	s.Require().EqualError(s.sut.ProjectCarCreated(s.ctx, carID, payload), carRepoCreateErr.Error())
+	return s.sut.ProjectCarCreated(s.ctx, s.carProjection.ID, payload)
 }
