@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 
@@ -34,11 +33,11 @@ func (v CarController) Get(ctx context.Context, payload *car.GetPayload) (res *c
 	carID, _ := uuid.Parse(payload.ID)
 	carProjection, err := v.queryService.Find(ctx, carID)
 	if err != nil {
-		err = car.MakeInternal(err)
+		err = car.MakeInternal(ErrInternal)
 		return
 	}
 	if carProjection == nil {
-		err = car.MakeNotFound(errors.New("car not found"))
+		err = car.MakeNotFound(ErrNotFound)
 		return
 	}
 
@@ -72,7 +71,7 @@ func (v CarController) Create(ctx context.Context, payload *car.CreatePayload) (
 		Color: payload.Color,
 	})
 	if err != nil {
-		err = car.MakeInternal(err)
+		err = car.MakeInternal(ErrInternal)
 	}
 
 	return
