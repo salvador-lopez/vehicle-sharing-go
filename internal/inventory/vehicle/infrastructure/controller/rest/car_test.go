@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	goa "goa.design/goa/v3/pkg"
 
+	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
@@ -31,6 +32,7 @@ func (s *carUnitSuite) SetupTest() {
 
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockCarQueryService = mock.NewMockCarQueryService(s.mockCtrl)
+	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
 
 	s.sut = rest.NewCarController(s.mockCreateCarCHandler, s.mockCarQueryService)
 }
@@ -169,6 +171,60 @@ func (s *carUnitSuite) TestGet() {
 			s.Require().Equal(tt.goaErrName, sErr.Name)
 			s.Require().EqualError(sErr, tt.sutErrMsg)
 			s.Require().Nil(carResource)
+		})
+	}
+}
+
+func (s *carUnitSuite) TestCreate() {
+	tests := []struct {
+		name        string
+		carID       uuid.UUID
+		vinNumber   string
+		color       string
+		cHandlerErr error
+		sutErrMsg   string
+		goaErrName  string
+	}{
+		{
+			name:      "Created with no error",
+			carID:     uuid.New(),
+			vinNumber: "4Y1SL65848Z411439",
+			color:     "Spectral Blue",
+		},
+		{
+			name:        "Return internal goa.ServiceError when command handler return error",
+			carID:       uuid.New(),
+			vinNumber:   "4Z1SL65848Z411440",
+			color:       "Black Bullet",
+			cHandlerErr: errors.New("command handler err"),
+			sutErrMsg:   rest.ErrInternal.Error(),
+			goaErrName:  "internal",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			defer s.TearDownTest()
+
+			cmd := &command.CreateCar{
+				VIN:   tt.vinNumber,
+				ID:    tt.carID,
+				Color: tt.color,
+			}
+			s.mockCreateCarCHandler.EXPECT().Handle(s.ctx, cmd).Return(tt.cHandlerErr)
+
+			payload := &car.CreatePayload{ID: tt.carID.String(), Vin: car.Vin(tt.vinNumber), Color: tt.color}
+			err := s.sut.Create(s.ctx, payload)
+
+			if tt.sutErrMsg == "" {
+				s.Require().NoError(err)
+				return
+			}
+			sErr, ok := err.(*goa.ServiceError)
+			s.Require().True(ok)
+			s.Require().Equal(tt.goaErrName, sErr.Name)
+			s.Require().EqualError(sErr, tt.sutErrMsg)
 		})
 	}
 }
