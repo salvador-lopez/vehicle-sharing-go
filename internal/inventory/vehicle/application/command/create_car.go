@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
-	domainpkg "vehicle-sharing-go/pkg/domain"
 )
 
 type CreateCar struct {
@@ -19,15 +18,15 @@ type CreateCar struct {
 type CreateCarHandler struct {
 	idGen        func() uuid.UUID
 	now          func() time.Time
-	carRepo      domain.CarRepository
-	evtPublisher domainpkg.EventPublisher
+	carRepo      CarRepository
+	evtPublisher EventPublisher
 }
 
 func NewCreateCarHandler(
 	idGen func() uuid.UUID,
 	now func() time.Time,
-	carRepo domain.CarRepository,
-	evtPublisher domainpkg.EventPublisher,
+	carRepo CarRepository,
+	evtPublisher EventPublisher,
 ) *CreateCarHandler {
 	return &CreateCarHandler{idGen: idGen, now: now, carRepo: carRepo, evtPublisher: evtPublisher}
 }
@@ -44,7 +43,7 @@ func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 		return err
 	}
 
-	_ = domainpkg.PublishRecordedEvents(ctx, "inventory", car, h.evtPublisher)
+	_ = h.evtPublisher.Publish(ctx, "inventory", car)
 
 	return nil
 }

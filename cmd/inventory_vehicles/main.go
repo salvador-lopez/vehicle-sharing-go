@@ -19,7 +19,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
-	in_memory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
+	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
 	domainpkg "vehicle-sharing-go/pkg/domain"
 )
 
@@ -33,7 +33,7 @@ func (n nopCarRepository) Create(ctx context.Context, c *domain.Car) error {
 type nopEventPublisher struct {
 }
 
-func (n nopEventPublisher) Publish(ctx context.Context, topic string, events []*domainpkg.Event) error {
+func (n nopEventPublisher) Publish(_ context.Context, _ string, _ []*domainpkg.Event) error {
 	return nil
 }
 
@@ -63,8 +63,8 @@ func main() {
 	)
 	{
 		carSvc = rest.NewCarController(
-			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}, &nopEventPublisher{}),
-			in_memory.NewCarService(),
+			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}, domainpkg.NewAgRootEventPublisher(&nopEventPublisher{})),
+			inmemory.NewCarService(),
 		)
 	}
 

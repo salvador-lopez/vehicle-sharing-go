@@ -1,18 +1,12 @@
 package domain
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/pkg/domain"
 )
-
-//go:generate mockgen -destination=mock/car_repository_mock.go -package=mock . CarRepository
-type CarRepository interface {
-	Create(context.Context, *Car) error
-}
 
 type Car struct {
 	*domain.AggregateRoot

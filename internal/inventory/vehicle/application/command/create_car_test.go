@@ -14,10 +14,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
+	"vehicle-sharing-go/internal/inventory/vehicle/application/command/mock"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
-	"vehicle-sharing-go/internal/inventory/vehicle/domain/mock"
 	domainpkg "vehicle-sharing-go/pkg/domain"
-	domainpkgmock "vehicle-sharing-go/pkg/domain/mock"
 )
 
 const (
@@ -32,7 +31,7 @@ type createCarUnitSuite struct {
 	idGen            func() uuid.UUID
 	now              func() time.Time
 	mockCarRepo      *mock.MockCarRepository
-	mockEvtPublisher *domainpkgmock.MockEventPublisher
+	mockEvtPublisher *mock.MockEventPublisher
 	sut              *command.CreateCarHandler
 }
 
@@ -46,7 +45,7 @@ func (s *createCarUnitSuite) SetupTest() {
 
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
-	s.mockEvtPublisher = domainpkgmock.NewMockEventPublisher(s.mockCtrl)
+	s.mockEvtPublisher = mock.NewMockEventPublisher(s.mockCtrl)
 
 	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo, s.mockEvtPublisher)
 }
@@ -85,7 +84,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
-	s.mockEvtPublisher.EXPECT().Publish(s.ctx, "inventory", []*domainpkg.Event{recordedEventDTO.ToEvent()}).Return(nil)
+	s.mockEvtPublisher.EXPECT().Publish(s.ctx, "inventory", expectedCar).Return(nil)
 
 	err := s.handleSut(id, validVinNumber)
 	s.Require().NoError(err)

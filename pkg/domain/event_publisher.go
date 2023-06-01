@@ -13,13 +13,23 @@ var publishEventsErr = errors.New("failed to publish events recorded in the aggr
 type EventPublisher interface {
 	Publish(ctx context.Context, topic string, events []*Event) error
 }
-type eventRecorder interface {
+
+//go:generate mockgen -destination=mock/event_recorder_mock.go -package=mock . EventRecorder
+type EventRecorder interface {
 	RecordedEvents() []*Event
 }
 
-func PublishRecordedEvents(ctx context.Context, topic string, aggRoot eventRecorder, publisher EventPublisher) error {
-	recordedEvents := aggRoot.RecordedEvents()
-	err := publisher.Publish(ctx, topic, recordedEvents)
+type AgRootEventPublisher struct {
+	publisher EventPublisher
+}
+
+func NewAgRootEventPublisher(publisher EventPublisher) *AgRootEventPublisher {
+	return &AgRootEventPublisher{publisher: publisher}
+}
+
+func (ep *AgRootEventPublisher) Publish(ctx context.Context, topic string, evtRecorder EventRecorder) error {
+	recordedEvents := evtRecorder.RecordedEvents()
+	err := ep.publisher.Publish(ctx, topic, recordedEvents)
 
 	if err != nil {
 		recordedEventsBytes, _ := json.Marshal(recordedEvents)
