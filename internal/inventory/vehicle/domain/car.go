@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/model"
 	"vehicle-sharing-go/pkg/domain"
 )
 
@@ -28,32 +30,26 @@ func NewCar(
 }
 
 func (c *Car) recordCreatedEvent(evtID uuid.UUID, timestamp time.Time) {
-	c.RecordEvent(evtID, "CarCreatedEvent", "Car", &CarCreatedEventPayload{
-		c.vin,
-		c.color,
-		c.CreatedAt(),
-		c.UpdatedAt(),
+	c.RecordEvent(evtID, "CarCreatedEvent", "Car", &event.CarCreatedPayload{
+		VinNumber: c.vin.number,
+		Color:     c.color,
+		CreatedAt: c.CreatedAt(),
+		UpdatedAt: c.UpdatedAt(),
 	}, timestamp)
 }
 
-type CarDTO struct {
-	VinNumber string `gorm:"type:varchar(255);unique"`
-	Color     string `gorm:"type:varchar(255)"`
-	*domain.AgRootDTO
-}
-
-func (c *CarDTO) ToAggRoot() *Car {
+func CarFromModel(carData *model.Car) *Car {
 	return &Car{
-		c.AgRootDTO.ToAggRoot(),
-		&VIN{c.VinNumber},
-		c.Color,
+		domain.AggregateRootFromModel(carData.AggregateRoot),
+		&VIN{carData.VinNumber},
+		carData.Color,
 	}
 }
 
-func (c *Car) ToDTO() *CarDTO {
-	return &CarDTO{
-		c.vin.number,
-		c.color,
-		c.AggregateRoot.ToDTO(),
+func (c *Car) ToModel() *model.Car {
+	return &model.Car{
+		VinNumber:     c.vin.number,
+		Color:         c.color,
+		AggregateRoot: c.AggregateRoot.ToDataModel(),
 	}
 }

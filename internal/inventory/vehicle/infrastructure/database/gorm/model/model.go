@@ -1,7 +1,9 @@
 package model
 
-import "vehicle-sharing-go/internal/inventory/vehicle/domain"
+import (
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/model"
+)
 
 type Car struct {
-	*domain.CarDTO
+	*model.Car
 }

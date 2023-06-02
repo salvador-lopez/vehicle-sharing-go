@@ -12,7 +12,7 @@ import (
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection/mock"
-	"vehicle-sharing-go/internal/inventory/vehicle/domain"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
 )
 
 type carProjectorUnitSuite struct {
@@ -128,7 +128,7 @@ func (s *carProjectorUnitSuite) buildVinDataProjection(
 }
 
 func (s *carProjectorUnitSuite) runSut() error {
-	payload := &domain.CarCreatedEventPayloadDTO{
+	payload := &event.CarCreatedPayload{
 		VinNumber: s.carProjection.VIN,
 		Color:     s.carProjection.Color,
 		CreatedAt: s.carProjection.CreatedAt,

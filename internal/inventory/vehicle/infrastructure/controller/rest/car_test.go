@@ -23,7 +23,7 @@ type carUnitSuite struct {
 	ctx                   context.Context
 	mockCtrl              *gomock.Controller
 	mockCreateCarCHandler *mock.MockCreateCarCommandHandler
-	mockCarQueryService   *mock.MockCarQueryService
+	mockCarQueryService   *mock.MockFindCarQueryService
 	sut                   *rest.CarController
 }
 
@@ -31,7 +31,7 @@ func (s *carUnitSuite) SetupTest() {
 	s.ctx = context.Background()
 
 	s.mockCtrl = gomock.NewController(s.T())
-	s.mockCarQueryService = mock.NewMockCarQueryService(s.mockCtrl)
+	s.mockCarQueryService = mock.NewMockFindCarQueryService(s.mockCtrl)
 	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
 
 	s.sut = rest.NewCarController(s.mockCreateCarCHandler, s.mockCarQueryService)

@@ -1,4 +1,4 @@
-package domain_test
+package event_test
 
 import (
 	"context"
@@ -9,8 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"vehicle-sharing-go/pkg/domain"
-	"vehicle-sharing-go/pkg/domain/mock"
+	"vehicle-sharing-go/pkg/domain/event/mock"
+
+	"vehicle-sharing-go/pkg/domain/event"
 )
 
 func TestPublishRecordedEvents(t *testing.T) {
@@ -18,18 +19,18 @@ func TestPublishRecordedEvents(t *testing.T) {
 		r           *require.Assertions
 		ctx         context.Context
 		mockCtrl    *gomock.Controller
-		evtRecorder *mock.MockEventRecorder
-		publisher   *mock.MockEventPublisher
-		sut         *domain.AgRootEventPublisher
+		evtRecorder *mock.MockRecorder
+		publisher   *mock.MockPublisher
+		sut         *event.AgRootEventPublisher
 	)
 
 	setup := func() {
 		r = require.New(t)
 		ctx = context.Background()
 		mockCtrl = gomock.NewController(t)
-		evtRecorder = mock.NewMockEventRecorder(mockCtrl)
-		publisher = mock.NewMockEventPublisher(mockCtrl)
-		sut = domain.NewAgRootEventPublisher(publisher)
+		evtRecorder = mock.NewMockRecorder(mockCtrl)
+		publisher = mock.NewMockPublisher(mockCtrl)
+		sut = event.NewAgRootEventPublisher(publisher)
 	}
 
 	teardown := func() {
@@ -39,22 +40,22 @@ func TestPublishRecordedEvents(t *testing.T) {
 	tests := []struct {
 		name            string
 		topic           string
-		recordedEvents  []*domain.Event
+		recordedEvents  []*event.Event
 		evtPublisherErr error
 		expectedErrMsg  string
 	}{
 		{
 			name:  "publish successfully",
 			topic: "inventory",
-			recordedEvents: []*domain.Event{
-				domain.NewEvent(
+			recordedEvents: []*event.Event{
+				{
 					uuid.New(),
 					uuid.New(),
 					"Car",
 					"CarCreatedEvent",
 					nil,
 					time.Now(),
-				),
+				},
 			},
 		},
 	}

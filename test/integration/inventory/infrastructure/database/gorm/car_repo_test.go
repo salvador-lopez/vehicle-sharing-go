@@ -10,9 +10,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
+	domainmodel "vehicle-sharing-go/internal/inventory/vehicle/domain/model"
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm/model"
-	domainpkg "vehicle-sharing-go/pkg/domain"
+	domainmodelpkg "vehicle-sharing-go/pkg/domain/model"
 )
 
 type carRepoIntegrationSuite struct {
@@ -42,25 +43,25 @@ func TestCarRepoIntegrationSuite(t *testing.T) {
 }
 
 func (s *carRepoIntegrationSuite) TestCreate() {
-	carDTO := &domain.CarDTO{
+	carModel := &domainmodel.Car{
 		VinNumber: "4Y1SL65848Z411439",
 		Color:     "Spectral Blue",
-		AgRootDTO: &domainpkg.AgRootDTO{
+		AggregateRoot: &domainmodelpkg.AggregateRoot{
 			ID:        s.carId,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 	}
-	car := carDTO.ToAggRoot()
+	car := domain.CarFromModel(carModel)
 	s.Require().NoError(s.sut.Create(s.ctx, car))
 
 	var gormCarStored *model.Car
 	s.db.First(&gormCarStored, s.carId)
-	s.Require().NotNil(gormCarStored.CarDTO)
+	s.Require().NotNil(gormCarStored.Car)
 
-	s.Require().Equal(carDTO.VinNumber, gormCarStored.VinNumber)
-	s.Require().Equal(carDTO.Color, gormCarStored.Color)
+	s.Require().Equal(carModel.VinNumber, gormCarStored.VinNumber)
+	s.Require().Equal(carModel.Color, gormCarStored.Color)
 
-	requireEqualDates(carDTO.CreatedAt, gormCarStored.CreatedAt, s.Require())
-	requireEqualDates(carDTO.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
+	requireEqualDates(carModel.CreatedAt, gormCarStored.CreatedAt, s.Require())
+	requireEqualDates(carModel.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
 }

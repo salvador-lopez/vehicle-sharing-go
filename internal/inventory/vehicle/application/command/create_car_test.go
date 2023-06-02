@@ -16,7 +16,10 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command/mock"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
-	domainpkg "vehicle-sharing-go/pkg/domain"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/model"
+	event2 "vehicle-sharing-go/pkg/domain/event"
+	modelpkg "vehicle-sharing-go/pkg/domain/model"
 )
 
 const (
@@ -62,12 +65,12 @@ func (s *createCarUnitSuite) TestCreateCar() {
 	id := uuid.New()
 	now := s.now()
 
-	recordedEventDTO := &domainpkg.EventDTO{
+	recordedEvent := &event2.Event{
 		ID:            s.idGen(),
 		AggregateID:   id,
 		AggregateType: "Car",
 		EventType:     "CarCreatedEvent",
-		PayloadDTO: &domain.CarCreatedEventPayloadDTO{
+		Payload: &event.CarCreatedPayload{
 			VinNumber: validVinNumber,
 			Color:     color,
 			CreatedAt: now,
@@ -76,11 +79,16 @@ func (s *createCarUnitSuite) TestCreateCar() {
 		Timestamp: now,
 	}
 
-	expectedCar := (&domain.CarDTO{
+	expectedCar := domain.CarFromModel(&model.Car{
 		VinNumber: validVinNumber,
 		Color:     color,
-		AgRootDTO: &domainpkg.AgRootDTO{ID: id, CreatedAt: now, UpdatedAt: now, RecordedEvents: []*domainpkg.EventDTO{recordedEventDTO}},
-	}).ToAggRoot()
+		AggregateRoot: &modelpkg.AggregateRoot{
+			ID:             id,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+			RecordedEvents: []*event2.Event{recordedEvent},
+		},
+	})
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 

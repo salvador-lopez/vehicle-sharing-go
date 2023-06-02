@@ -4,58 +4,54 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"vehicle-sharing-go/pkg/domain/event"
+	"vehicle-sharing-go/pkg/domain/model"
 )
 
 type AggregateRoot struct {
 	*BaseEntity
-	recordedEvents []*Event
+	recordedEvents []*event.Event
 }
 
 func NewAggregateRoot(id uuid.UUID, nowFun func() time.Time) *AggregateRoot {
 	return &AggregateRoot{BaseEntity: &BaseEntity{id: id, createdAt: nowFun(), updatedAt: nowFun()}}
 }
 
-func (a *AggregateRoot) RecordedEvents() []*Event {
+func (a *AggregateRoot) RecordedEvents() []*event.Event {
 	return a.recordedEvents
 }
 
 func (a *AggregateRoot) RecordEvent(eventID uuid.UUID, eventType, aggregateType string, payload any, timestamp time.Time) {
 	a.recordedEvents = append(
 		a.recordedEvents,
-		NewEvent(
-			eventID,
-			a.id,
-			aggregateType,
-			eventType,
-			payload,
-			timestamp,
-		),
+		&event.Event{
+			ID:            eventID,
+			AggregateID:   a.id,
+			AggregateType: aggregateType,
+			EventType:     eventType,
+			Payload:       payload,
+			Timestamp:     timestamp,
+		},
 	)
 }
 
-func (a *AggregateRoot) ToDTO() *AgRootDTO {
-	return &AgRootDTO{
+func (a *AggregateRoot) ToDataModel() *model.AggregateRoot {
+	return &model.AggregateRoot{
 		ID:        a.id,
 		CreatedAt: a.createdAt,
 		UpdatedAt: a.updatedAt,
 	}
 }
 
-type AgRootDTO struct {
-	ID             uuid.UUID `gorm:"<-:create;type:varchar(36)"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	RecordedEvents []*EventDTO `gorm:"-"`
-}
-
-func (dto AgRootDTO) ToAggRoot() *AggregateRoot {
-	var recordedEvents []*Event
-	for _, evtDTO := range dto.RecordedEvents {
-		recordedEvents = append(recordedEvents, evtDTO.ToEvent())
+func AggregateRootFromModel(aggRootModel *model.AggregateRoot) *AggregateRoot {
+	var recordedEvents []*event.Event
+	for _, evt := range aggRootModel.RecordedEvents {
+		recordedEvents = append(recordedEvents, evt)
 	}
 
 	return &AggregateRoot{
-		BaseEntity:     &BaseEntity{id: dto.ID, createdAt: dto.CreatedAt, updatedAt: dto.UpdatedAt},
+		BaseEntity:     &BaseEntity{id: aggRootModel.ID, createdAt: aggRootModel.CreatedAt, updatedAt: aggRootModel.UpdatedAt},
 		recordedEvents: recordedEvents,
 	}
 }

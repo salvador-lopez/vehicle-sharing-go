@@ -1,4 +1,4 @@
-package domain
+package event
 
 import (
 	"context"
@@ -9,25 +9,25 @@ import (
 
 var publishEventsErr = errors.New("failed to publish events recorded in the aggregate root")
 
-//go:generate mockgen -destination=mock/event_publisher_mock.go -package=mock . EventPublisher
-type EventPublisher interface {
+//go:generate mockgen -destination=mock/publisher_mock.go -package=mock . Publisher
+type Publisher interface {
 	Publish(ctx context.Context, topic string, events []*Event) error
 }
 
-//go:generate mockgen -destination=mock/event_recorder_mock.go -package=mock . EventRecorder
-type EventRecorder interface {
+//go:generate mockgen -destination=mock/recorder_mock.go -package=mock . Recorder
+type Recorder interface {
 	RecordedEvents() []*Event
 }
 
 type AgRootEventPublisher struct {
-	publisher EventPublisher
+	publisher Publisher
 }
 
-func NewAgRootEventPublisher(publisher EventPublisher) *AgRootEventPublisher {
+func NewAgRootEventPublisher(publisher Publisher) *AgRootEventPublisher {
 	return &AgRootEventPublisher{publisher: publisher}
 }
 
-func (ep *AgRootEventPublisher) Publish(ctx context.Context, topic string, evtRecorder EventRecorder) error {
+func (ep *AgRootEventPublisher) Publish(ctx context.Context, topic string, evtRecorder Recorder) error {
 	recordedEvents := evtRecorder.RecordedEvents()
 	err := ep.publisher.Publish(ctx, topic, recordedEvents)
 

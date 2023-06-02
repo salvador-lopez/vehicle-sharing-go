@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vehicle-sharing-go/internal/inventory/vehicle/domain"
+	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
 )
 
 //go:generate mockgen -destination=mock/car_repository_mock.go -package=mock . CarRepository
@@ -49,7 +49,7 @@ func NewCarProjector(vinDecoder VINDecoder, carRepo CarRepository) *CarProjector
 	return &CarProjector{vinDecoder: vinDecoder, carRepo: carRepo}
 }
 
-func (cp *CarProjector) ProjectCarCreated(ctx context.Context, carID uuid.UUID, payload *domain.CarCreatedEventPayloadDTO) error {
+func (cp *CarProjector) ProjectCarCreated(ctx context.Context, carID uuid.UUID, payload *event.CarCreatedPayload) error {
 	vinData, err := cp.vinDecoder.Decode(ctx, payload.VinNumber)
 	if err != nil {
 		return err
