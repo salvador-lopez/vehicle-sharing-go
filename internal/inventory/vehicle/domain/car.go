@@ -38,11 +38,11 @@ func (c *Car) recordCreatedEvent(evtID uuid.UUID, timestamp time.Time) {
 	}, timestamp)
 }
 
-func CarFromModel(carData *model.Car) *Car {
+func CarFromModel(model *model.Car) *Car {
 	return &Car{
-		domain.AggregateRootFromModel(carData.AggregateRoot),
-		&VIN{carData.VinNumber},
-		carData.Color,
+		domain.AggregateRootFromModel(model.AggregateRoot),
+		&VIN{model.VinNumber},
+		model.Color,
 	}
 }
 

@@ -29,13 +29,12 @@ const (
 
 type createCarUnitSuite struct {
 	suite.Suite
-	ctx              context.Context
-	mockCtrl         *gomock.Controller
-	idGen            func() uuid.UUID
-	now              func() time.Time
-	mockCarRepo      *mock.MockCarRepository
-	mockEvtPublisher *mock.MockEventPublisher
-	sut              *command.CreateCarHandler
+	ctx         context.Context
+	mockCtrl    *gomock.Controller
+	idGen       func() uuid.UUID
+	now         func() time.Time
+	mockCarRepo *mock.MockCarRepository
+	sut         *command.CreateCarHandler
 }
 
 func (s *createCarUnitSuite) SetupTest() {
@@ -48,9 +47,8 @@ func (s *createCarUnitSuite) SetupTest() {
 
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
-	s.mockEvtPublisher = mock.NewMockEventPublisher(s.mockCtrl)
 
-	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo, s.mockEvtPublisher)
+	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo)
 }
 
 func (s *createCarUnitSuite) TearDownTest() {
@@ -91,8 +89,6 @@ func (s *createCarUnitSuite) TestCreateCar() {
 	})
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
-
-	s.mockEvtPublisher.EXPECT().Publish(s.ctx, "inventory", expectedCar).Return(nil)
 
 	err := s.handleSut(id, validVinNumber)
 	s.Require().NoError(err)

@@ -16,19 +16,13 @@ type CreateCar struct {
 }
 
 type CreateCarHandler struct {
-	idGen        func() uuid.UUID
-	now          func() time.Time
-	carRepo      CarRepository
-	evtPublisher EventPublisher
+	idGen   func() uuid.UUID
+	now     func() time.Time
+	carRepo CarRepository
 }
 
-func NewCreateCarHandler(
-	idGen func() uuid.UUID,
-	now func() time.Time,
-	carRepo CarRepository,
-	evtPublisher EventPublisher,
-) *CreateCarHandler {
-	return &CreateCarHandler{idGen: idGen, now: now, carRepo: carRepo, evtPublisher: evtPublisher}
+func NewCreateCarHandler(idGen func() uuid.UUID, now func() time.Time, carRepo CarRepository) *CreateCarHandler {
+	return &CreateCarHandler{idGen: idGen, now: now, carRepo: carRepo}
 }
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
@@ -42,8 +36,6 @@ func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	if err != nil {
 		return err
 	}
-
-	_ = h.evtPublisher.Publish(ctx, "inventory", car)
 
 	return nil
 }

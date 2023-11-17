@@ -63,7 +63,7 @@ func main() {
 	)
 	{
 		carSvc = rest.NewCarController(
-			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}, event.NewAgRootEventPublisher(&nopEventPublisher{})),
+			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}),
 			inmemory.NewCarService(),
 		)
 	}
