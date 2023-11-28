@@ -16,13 +16,14 @@ type CreateCar struct {
 }
 
 type CreateCarHandler struct {
-	idGen   func() uuid.UUID
-	now     func() time.Time
-	carRepo CarRepository
+	idGen       func() uuid.UUID
+	now         func() time.Time
+	repoFactory RepositoryFactory
+	txSession   TransactionalSession
 }
 
-func NewCreateCarHandler(idGen func() uuid.UUID, now func() time.Time, carRepo CarRepository) *CreateCarHandler {
-	return &CreateCarHandler{idGen: idGen, now: now, carRepo: carRepo}
+func NewCreateCarHandler(idGen func() uuid.UUID, now func() time.Time, repoFactory RepositoryFactory, txSession TransactionalSession) *CreateCarHandler {
+	return &CreateCarHandler{idGen: idGen, now: now, repoFactory: repoFactory, txSession: txSession}
 }
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
@@ -32,10 +33,15 @@ func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	}
 	car := domain.NewCar(cmd.ID, vin, cmd.Color, h.idGen, h.now)
 
-	err = h.carRepo.Create(ctx, car)
+	err = h.repoFactory.CarRepository().Create(ctx, car)
 	if err != nil {
 		return err
 	}
+
+	// err = h.repoFactory.OutboxRepository().Append(ctx, car)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

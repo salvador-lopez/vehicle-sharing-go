@@ -9,15 +9,15 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
 )
 
-type CarService struct {
+type CarQueryService struct {
 	projections map[string]*projection.Car
 }
 
-func NewCarService() *CarService {
+func NewCarQueryService() *CarQueryService {
 	carID, _ := uuid.Parse("96194205-a21b-4cb6-b499-74cb1da1a20a")
 	country := "United States of America"
 	year := "2017"
-	return &CarService{projections: map[string]*projection.Car{carID.String(): {
+	return &CarQueryService{projections: map[string]*projection.Car{carID.String(): {
 		ID:        carID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -30,6 +30,6 @@ func NewCarService() *CarService {
 	}}}
 }
 
-func (c CarService) Find(ctx context.Context, id uuid.UUID) (*projection.Car, error) {
+func (c CarQueryService) Find(ctx context.Context, id uuid.UUID) (*projection.Car, error) {
 	return c.projections[id.String()], nil
 }

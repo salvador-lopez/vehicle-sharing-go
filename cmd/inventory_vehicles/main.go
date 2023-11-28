@@ -16,26 +16,11 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
-	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
-	"vehicle-sharing-go/pkg/domain/event"
 )
-
-type nopCarRepository struct {
-}
-
-func (n nopCarRepository) Create(ctx context.Context, c *domain.Car) error {
-	return nil
-}
-
-type nopEventPublisher struct {
-}
-
-func (n nopEventPublisher) Publish(_ context.Context, _ string, _ []*event.Event) error {
-	return nil
-}
 
 func main() {
 	// Define command line flags, add any other flag required to configure the
@@ -44,8 +29,16 @@ func main() {
 		hostF     = flag.String("host", "localhost", "Server host (valid values: localhost)")
 		domainF   = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
 		httpPortF = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
-		secureF   = flag.Bool("secure", false, "Use secure scheme (https or grpcs)")
-		dbgF      = flag.Bool("debug", false, "Log request and response bodies")
+
+		dbUser  = flag.String("db-user", "inventory", "database user")
+		dbPwd   = flag.String("db-password", "inventory", "database password")
+		dbName  = flag.String("db-name", "inventory", "database name")
+		dbHost  = flag.String("db-host", "localhost", "database host")
+		dbPort  = flag.Int("db-port", 3308, "database port")
+		dbDebug = flag.Bool("db-debug", false, "database debug mode")
+
+		secureF = flag.Bool("secure", false, "Use secure scheme (https or grpcs)")
+		dbgF    = flag.Bool("debug", false, "Log request and response bodies")
 	)
 	flag.Parse()
 
@@ -57,14 +50,29 @@ func main() {
 		logger = log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
 	}
 
+	cfg := &gorm.Config{
+		UserName:     *dbUser,
+		Password:     *dbPwd,
+		DatabaseName: *dbName,
+		Host:         *dbHost,
+		Port:         *dbPort,
+		Logger:       logger,
+		LogQueries:   *dbDebug,
+	}
+
+	dbConn, err := gorm.NewConnectionFromConfig(cfg)
+	if err != nil {
+		logger.Fatalf("failed to create db connection: %v", err)
+	}
+
 	// Initialize the services.
 	var (
 		carSvc car.Service
 	)
 	{
 		carSvc = rest.NewCarController(
-			command.NewCreateCarHandler(uuid.New, time.Now, &nopCarRepository{}),
-			inmemory.NewCarService(),
+			command.NewCreateCarHandler(uuid.New, time.Now, dbConn, dbConn),
+			inmemory.NewCarQueryService(),
 		)
 	}
 

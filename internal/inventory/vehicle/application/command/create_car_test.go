@@ -29,12 +29,14 @@ const (
 
 type createCarUnitSuite struct {
 	suite.Suite
-	ctx         context.Context
-	mockCtrl    *gomock.Controller
-	idGen       func() uuid.UUID
-	now         func() time.Time
-	mockCarRepo *mock.MockCarRepository
-	sut         *command.CreateCarHandler
+	ctx             context.Context
+	mockCtrl        *gomock.Controller
+	idGen           func() uuid.UUID
+	now             func() time.Time
+	mockRepoFactory *mock.MockRepositoryFactory
+	mockCarRepo     *mock.MockCarRepository
+	mockTxSession   *mock.MockTransactionalSession
+	sut             *command.CreateCarHandler
 }
 
 func (s *createCarUnitSuite) SetupTest() {
@@ -46,9 +48,12 @@ func (s *createCarUnitSuite) SetupTest() {
 	s.now = func() time.Time { return now }
 
 	s.mockCtrl = gomock.NewController(s.T())
-	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
 
-	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo)
+	s.mockRepoFactory = mock.NewMockRepositoryFactory(s.mockCtrl)
+	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
+	s.mockTxSession = mock.NewMockTransactionalSession(s.mockCtrl)
+
+	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockRepoFactory, s.mockTxSession)
 }
 
 func (s *createCarUnitSuite) TearDownTest() {
@@ -88,6 +93,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 		},
 	})
 
+	s.mockRepoFactory.EXPECT().CarRepository().Return(s.mockCarRepo)
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
 	err := s.handleSut(id, validVinNumber)
@@ -138,8 +144,6 @@ func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
 			s.SetupTest()
 			defer s.TearDownTest()
 
-			s.mockCarRepo.EXPECT().Create(gomock.Any(), gomock.Any()).AnyTimes()
-
 			invalidVinErr := fmt.Errorf("%v: %s", domain.ErrInvalidVin, tt.vin)
 			err := s.handleSut(uuid.New(), tt.vin)
 			s.Require().EqualError(err, invalidVinErr.Error())
@@ -148,6 +152,7 @@ func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
 }
 
 func (s *createCarUnitSuite) TestReturnRepositoryErr() {
+	s.mockRepoFactory.EXPECT().CarRepository().Return(s.mockCarRepo)
 	repoErr := errors.New("repository error")
 	s.mockCarRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(repoErr)
 
