@@ -9,9 +9,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"gorm.io/gorm/schema"
-
-	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 )
 
 type Config struct {
@@ -32,6 +29,10 @@ type Connection struct {
 	logger log.Logger
 }
 
+func (c *Connection) Db() *gorm.DB {
+	return c.db
+}
+
 func NewConnectionFromConfig(c *Config) (*Connection, error) {
 	dsn := fmt.Sprintf(`%s:%s@(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=UTC`,
 		c.UserName,
@@ -42,8 +43,7 @@ func NewConnectionFromConfig(c *Config) (*Connection, error) {
 	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{SingularTable: true},
-		Logger:         logger.Default,
+		Logger: logger.Default,
 	})
 
 	if err != nil {
@@ -63,9 +63,7 @@ func NewConnectionFromConfig(c *Config) (*Connection, error) {
 	sqlDB.SetConnMaxLifetime(c.ConnMaxLifetime)
 	sqlDB.SetMaxOpenConns(c.MaxOpenConns)
 
-	return &Connection{
-		db: db,
-	}, nil
+	return &Connection{db: db}, nil
 }
 
 func (c *Connection) Close() error {
@@ -81,19 +79,10 @@ func (c *Connection) Close() error {
 	return sqlDb.Close()
 }
 
-func (c *Connection) Transaction(
-	ctx context.Context,
-	f func(context.Context, command.RepositoryFactory) error,
-) error {
+func (c *Connection) Transaction(ctx context.Context, f func(context.Context) error) error {
 	return c.db.Transaction(func(tx *gorm.DB) error {
-		return f(ctx, &Connection{db: tx})
+		c.db = tx
+
+		return f(ctx)
 	})
-}
-
-func (c *Connection) CarRepository() command.CarRepository {
-	return NewCarRepository(c.db)
-}
-
-func (c *Connection) OutboxRepository() command.OutboxRepository {
-	return NewOutboxRepository(c.db)
 }

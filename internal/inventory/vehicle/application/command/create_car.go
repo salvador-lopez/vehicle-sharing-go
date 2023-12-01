@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
+	commandpkg "vehicle-sharing-go/pkg/application/command"
 )
 
 type CreateCar struct {
@@ -16,14 +17,20 @@ type CreateCar struct {
 }
 
 type CreateCarHandler struct {
-	idGen       func() uuid.UUID
-	now         func() time.Time
-	repoFactory RepositoryFactory
-	txSession   TransactionalSession
+	idGen        func() uuid.UUID
+	now          func() time.Time
+	carRepo      CarRepository
+	txSession    TransactionalSession
+	evtPublisher *commandpkg.AgRootEventPublisher
 }
 
-func NewCreateCarHandler(idGen func() uuid.UUID, now func() time.Time, repoFactory RepositoryFactory, txSession TransactionalSession) *CreateCarHandler {
-	return &CreateCarHandler{idGen: idGen, now: now, repoFactory: repoFactory, txSession: txSession}
+func NewCreateCarHandler(
+	idGen func() uuid.UUID, now func() time.Time,
+	cr CarRepository,
+	txSession TransactionalSession,
+	ep *commandpkg.AgRootEventPublisher,
+) *CreateCarHandler {
+	return &CreateCarHandler{idGen: idGen, now: now, carRepo: cr, txSession: txSession, evtPublisher: ep}
 }
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
@@ -33,15 +40,13 @@ func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	}
 	car := domain.NewCar(cmd.ID, vin, cmd.Color, h.idGen, h.now)
 
-	err = h.repoFactory.CarRepository().Create(ctx, car)
-	if err != nil {
-		return err
-	}
+	return h.txSession.Transaction(ctx, func(ctx context.Context) error {
+		err = h.carRepo.Create(ctx, car)
+		if err != nil {
 
-	// err = h.repoFactory.OutboxRepository().Append(ctx, car)
-	// if err != nil {
-	// 	return err
-	// }
+			return err
+		}
 
-	return nil
+		return h.evtPublisher.Publish(ctx, car)
+	})
 }

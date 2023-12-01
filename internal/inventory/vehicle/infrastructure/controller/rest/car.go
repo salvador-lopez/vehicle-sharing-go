@@ -71,6 +71,7 @@ func (v CarController) Create(ctx context.Context, payload *car.CreatePayload) (
 		Color: payload.Color,
 	})
 	if err != nil {
+		// TODO: Log the command handler error directly here or using a command bus middleware
 		err = car.MakeInternal(ErrInternal)
 	}
 

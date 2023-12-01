@@ -23,11 +23,11 @@ func (s *carProjectionRepoIntegrationSuite) SetupSuite() {
 	s.databaseSuite.SetupSuite()
 	s.initDb()
 	s.carId = uuid.New()
-	s.sut = gormvehicle.NewCarProjectionRepository(s.db)
+	s.sut = gormvehicle.NewCarProjectionRepository(s.conn.Db())
 }
 
 func (s *carProjectionRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.db.AutoMigrate(&projection.Car{}))
+	s.Require().NoError(s.conn.Db().AutoMigrate(&projection.Car{}))
 }
 
 func TestCarProjectorIntegrationSuite(t *testing.T) {
@@ -56,7 +56,7 @@ func (s *carProjectionRepoIntegrationSuite) TestProject() {
 	s.Require().NoError(s.sut.Create(s.ctx, carProjectionExpected))
 
 	var carProjection *projection.Car
-	s.Require().NoError(s.db.WithContext(s.ctx).Find(&carProjection, s.carId).Error)
+	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Find(&carProjection, s.carId).Error)
 
 	s.requireEqualProjections(carProjectionExpected, carProjection)
 }
@@ -81,16 +81,16 @@ func (s *carProjectionRepoIntegrationSuite) TestFind() {
 		Color: "Sapphire Graphite",
 	}
 
-	s.Require().NoError(s.db.WithContext(s.ctx).Create(carProjectionExpected).Error)
+	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Create(carProjectionExpected).Error)
 
 	var carProjection *projection.Car
-	s.Require().NoError(s.db.WithContext(s.ctx).Find(&carProjection, s.carId).Error)
+	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Find(&carProjection, s.carId).Error)
 
 	s.requireEqualProjections(carProjectionExpected, carProjection)
 }
 
 func (s *carProjectionRepoIntegrationSuite) TearDownTest() {
-	s.db.Delete(&projection.Car{}, s.carId)
+	s.conn.Db().Delete(&projection.Car{}, s.carId)
 	s.databaseSuite.TearDownTest()
 }
 

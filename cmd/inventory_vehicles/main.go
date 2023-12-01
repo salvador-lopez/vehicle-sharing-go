@@ -20,6 +20,8 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
+	commandpkg "vehicle-sharing-go/pkg/application/command"
+	gorm2 "vehicle-sharing-go/pkg/infrastructure/database/gorm"
 )
 
 func main() {
@@ -50,7 +52,7 @@ func main() {
 		logger = log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
 	}
 
-	cfg := &gorm.Config{
+	dbConn, err := gorm2.NewConnectionFromConfig(&gorm2.Config{
 		UserName:     *dbUser,
 		Password:     *dbPwd,
 		DatabaseName: *dbName,
@@ -58,9 +60,7 @@ func main() {
 		Port:         *dbPort,
 		Logger:       logger,
 		LogQueries:   *dbDebug,
-	}
-
-	dbConn, err := gorm.NewConnectionFromConfig(cfg)
+	})
 	if err != nil {
 		logger.Fatalf("failed to create db connection: %v", err)
 	}
@@ -71,7 +71,7 @@ func main() {
 	)
 	{
 		carSvc = rest.NewCarController(
-			command.NewCreateCarHandler(uuid.New, time.Now, dbConn, dbConn),
+			command.NewCreateCarHandler(uuid.New, time.Now, gorm.NewCarRepository(dbConn), dbConn, commandpkg.NewAgRootEventPublisher(gorm2.NewOutboxRepository(dbConn))),
 			inmemory.NewCarQueryService(),
 		)
 	}

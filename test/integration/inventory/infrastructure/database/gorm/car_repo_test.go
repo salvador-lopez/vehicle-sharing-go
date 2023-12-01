@@ -26,15 +26,15 @@ func (s *carRepoIntegrationSuite) SetupSuite() {
 	s.databaseSuite.SetupSuite()
 	s.initDb()
 	s.carId = uuid.New()
-	s.sut = gormvehicle.NewCarRepository(s.db)
+	s.sut = gormvehicle.NewCarRepository(s.conn)
 }
 
 func (s *carRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.db.AutoMigrate(&model.Car{}))
+	s.Require().NoError(s.conn.Db().AutoMigrate(&model.Car{}))
 }
 
 func (s *carRepoIntegrationSuite) TearDownTest() {
-	s.db.Delete(&model.Car{}, s.carId)
+	s.conn.Db().Delete(&model.Car{}, s.carId)
 	s.databaseSuite.TearDownTest()
 }
 
@@ -56,7 +56,7 @@ func (s *carRepoIntegrationSuite) TestCreate() {
 	s.Require().NoError(s.sut.Create(s.ctx, car))
 
 	var gormCarStored *model.Car
-	s.db.First(&gormCarStored, s.carId)
+	s.conn.Db().First(&gormCarStored, s.carId)
 	s.Require().NotNil(gormCarStored.Car)
 
 	s.Require().Equal(carModel.VinNumber, gormCarStored.VinNumber)

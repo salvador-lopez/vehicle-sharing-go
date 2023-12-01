@@ -2,20 +2,20 @@ package gorm
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+
+	gormpkg "vehicle-sharing-go/pkg/infrastructure/database/gorm"
 )
 
 type databaseSuite struct {
 	suite.Suite
 	ctx       context.Context
 	cancelFun context.CancelFunc
-	db        *gorm.DB
+	conn      *gormpkg.Connection
 }
 
 func (s *databaseSuite) SetupSuite() {
@@ -23,18 +23,19 @@ func (s *databaseSuite) SetupSuite() {
 }
 
 func (s *databaseSuite) createDb() {
-	dsn := fmt.Sprintf(`%s:%s@(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=UTC`,
-		os.Getenv("MYSQL_USER"),
-		os.Getenv("MYSQL_PASSWORD"),
-		os.Getenv("MYSQL_HOST"),
-		os.Getenv("MYSQL_PORT"),
-		os.Getenv("MYSQL_DATABASE"),
-	)
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	port, err := strconv.Atoi(os.Getenv("MYSQL_PORT"))
 	s.Require().NoError(err)
 
-	s.db = db
+	conn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
+		UserName:     os.Getenv("MYSQL_USER"),
+		Password:     os.Getenv("MYSQL_PASSWORD"),
+		DatabaseName: os.Getenv("MYSQL_DATABASE"),
+		Host:         os.Getenv("MYSQL_HOST"),
+		Port:         port,
+	})
+	s.Require().NoError(err)
+
+	s.conn = conn
 }
 
 func (s *databaseSuite) SetupTest() {
@@ -48,8 +49,5 @@ func (s *databaseSuite) TearDownTest() {
 }
 
 func (s *databaseSuite) TearDownSuite() {
-	sqlDb, err := s.db.DB()
-	s.Require().NoError(err)
-
-	s.Require().NoError(sqlDb.Close())
+	s.Require().NoError(s.conn.Close())
 }

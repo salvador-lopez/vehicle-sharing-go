@@ -27,6 +27,10 @@ type Car struct {
 	Color string `gorm:"type:varchar(255)"`
 }
 
+func (c Car) TableName() string {
+	return "car_projections"
+}
+
 type VINData struct {
 	VIN           string  `gorm:"type:varchar(255);unique"`
 	Country       *string `gorm:"type:varchar(255)"`

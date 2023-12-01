@@ -18,7 +18,9 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/model"
-	event2 "vehicle-sharing-go/pkg/domain/event"
+	commandpkg "vehicle-sharing-go/pkg/application/command"
+	mockpkg "vehicle-sharing-go/pkg/application/command/mock"
+	eventpkg "vehicle-sharing-go/pkg/domain/event"
 	modelpkg "vehicle-sharing-go/pkg/domain/model"
 )
 
@@ -29,14 +31,15 @@ const (
 
 type createCarUnitSuite struct {
 	suite.Suite
-	ctx             context.Context
-	mockCtrl        *gomock.Controller
-	idGen           func() uuid.UUID
-	now             func() time.Time
-	mockRepoFactory *mock.MockRepositoryFactory
-	mockCarRepo     *mock.MockCarRepository
-	mockTxSession   *mock.MockTransactionalSession
-	sut             *command.CreateCarHandler
+	ctx                 context.Context
+	mockCtrl            *gomock.Controller
+	idGen               func() uuid.UUID
+	now                 func() time.Time
+	mockCarRepo         *mock.MockCarRepository
+	mockTxSession       *mock.MockTransactionalSession
+	mockPublisher       *mockpkg.MockPublisher
+	aggRootEvtPublisher *commandpkg.AgRootEventPublisher
+	sut                 *command.CreateCarHandler
 }
 
 func (s *createCarUnitSuite) SetupTest() {
@@ -49,11 +52,12 @@ func (s *createCarUnitSuite) SetupTest() {
 
 	s.mockCtrl = gomock.NewController(s.T())
 
-	s.mockRepoFactory = mock.NewMockRepositoryFactory(s.mockCtrl)
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
 	s.mockTxSession = mock.NewMockTransactionalSession(s.mockCtrl)
+	s.mockPublisher = mockpkg.NewMockPublisher(s.mockCtrl)
+	s.aggRootEvtPublisher = commandpkg.NewAgRootEventPublisher(s.mockPublisher)
 
-	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockRepoFactory, s.mockTxSession)
+	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo, s.mockTxSession, s.aggRootEvtPublisher)
 }
 
 func (s *createCarUnitSuite) TearDownTest() {
@@ -68,7 +72,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 	id := uuid.New()
 	now := s.now()
 
-	recordedEvent := &event2.Event{
+	recordedEvent := &eventpkg.Event{
 		ID:            s.idGen(),
 		AggregateID:   id,
 		AggregateType: "Car",
@@ -89,11 +93,10 @@ func (s *createCarUnitSuite) TestCreateCar() {
 			ID:             id,
 			CreatedAt:      now,
 			UpdatedAt:      now,
-			RecordedEvents: []*event2.Event{recordedEvent},
+			RecordedEvents: []*eventpkg.Event{recordedEvent},
 		},
 	})
 
-	s.mockRepoFactory.EXPECT().CarRepository().Return(s.mockCarRepo)
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 
 	err := s.handleSut(id, validVinNumber)
@@ -152,7 +155,6 @@ func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
 }
 
 func (s *createCarUnitSuite) TestReturnRepositoryErr() {
-	s.mockRepoFactory.EXPECT().CarRepository().Return(s.mockCarRepo)
 	repoErr := errors.New("repository error")
 	s.mockCarRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(repoErr)
 
