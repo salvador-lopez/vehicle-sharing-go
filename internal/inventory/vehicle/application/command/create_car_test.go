@@ -86,6 +86,8 @@ func (s *createCarUnitSuite) TestCreateCar() {
 		Timestamp: now,
 	}
 
+	recordedEvents := []*eventpkg.Event{recordedEvent}
+
 	expectedCar := domain.CarFromModel(&model.Car{
 		VinNumber: validVinNumber,
 		Color:     color,
@@ -93,11 +95,18 @@ func (s *createCarUnitSuite) TestCreateCar() {
 			ID:             id,
 			CreatedAt:      now,
 			UpdatedAt:      now,
-			RecordedEvents: []*eventpkg.Event{recordedEvent},
+			RecordedEvents: recordedEvents,
 		},
 	})
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
+	s.mockPublisher.EXPECT().Publish(s.ctx, recordedEvents).Return(nil)
+
+	s.mockTxSession.EXPECT().Transaction(s.ctx, gomock.Any()).Do(
+		func(ctx context.Context, txSessionFunc func(context.Context) error) {
+			s.Require().NoError(txSessionFunc(s.ctx))
+		},
+	).Return(nil)
 
 	err := s.handleSut(id, validVinNumber)
 	s.Require().NoError(err)
@@ -157,6 +166,12 @@ func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
 func (s *createCarUnitSuite) TestReturnRepositoryErr() {
 	repoErr := errors.New("repository error")
 	s.mockCarRepo.EXPECT().Create(s.ctx, gomock.Any()).Return(repoErr)
+
+	s.mockTxSession.EXPECT().Transaction(s.ctx, gomock.Any()).Do(
+		func(ctx context.Context, txSessionFunc func(context.Context) error) {
+			s.Require().EqualError(txSessionFunc(s.ctx), repoErr.Error())
+		},
+	).Return(repoErr)
 
 	err := s.handleSut(uuid.New(), validVinNumber)
 	s.Require().EqualError(err, repoErr.Error())

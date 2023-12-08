@@ -4,7 +4,7 @@ mock-gen:
 mock-clean:
 	@find . -type f -name '*_mock.go' -delete
 
-unit-test: mock-gen
+unit-test-inventory: mock-gen
 	@CGO_ENABLED=1 go test ./... -tags=unit_inventory -race -covermode atomic
 
 integration-test-inventory: export MYSQL_USER=inventory

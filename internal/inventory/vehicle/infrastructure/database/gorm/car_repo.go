@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 
+	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm/model"
 	"vehicle-sharing-go/pkg/infrastructure/database/gorm"
@@ -19,5 +20,15 @@ func NewCarRepository(conn *gorm.Connection) *CarRepository {
 func (c *CarRepository) Create(ctx context.Context, car *domain.Car) error {
 	carModel := &model.Car{Car: car.ToModel()}
 
-	return c.conn.Db().WithContext(ctx).Create(carModel).Error
+	err := c.conn.Db().WithContext(ctx).Create(carModel).Error
+
+	if err != nil {
+		if c.conn.IsDuplicateEntryErr(err) {
+			return command.ErrCarAlreadyExists
+		}
+
+		return err
+	}
+
+	return nil
 }

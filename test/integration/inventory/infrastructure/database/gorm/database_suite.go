@@ -47,7 +47,3 @@ func (s *databaseSuite) SetupTest() {
 func (s *databaseSuite) TearDownTest() {
 	s.cancelFun()
 }
-
-func (s *databaseSuite) TearDownSuite() {
-	s.Require().NoError(s.conn.Close())
-}

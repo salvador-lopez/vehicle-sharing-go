@@ -19,8 +19,10 @@ import (
 
 type outboxRepoIntegrationSuite struct {
 	databaseSuite
-	evtID uuid.UUID
-	sut   *gorm.OutboxRepository
+	evtID      uuid.UUID
+	appID      string
+	kafkaTopic string
+	sut        *gorm.OutboxRepository
 }
 
 func (s *outboxRepoIntegrationSuite) SetupSuite() {
@@ -31,11 +33,11 @@ func (s *outboxRepoIntegrationSuite) SetupSuite() {
 }
 
 func (s *outboxRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.conn.Db().AutoMigrate(&modelpkg.Event{}))
+	s.Require().NoError(s.conn.Db().AutoMigrate(&modelpkg.OutboxRecord{}))
 }
 
 func (s *outboxRepoIntegrationSuite) TearDownTest() {
-	s.conn.Db().Delete(&eventpkg.Event{}, s.evtID)
+	s.conn.Db().Delete(&modelpkg.OutboxRecord{}, s.evtID)
 	s.databaseSuite.TearDownTest()
 }
 
@@ -64,22 +66,23 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	events = append(events, carCreatedEvent)
 	s.Require().NoError(s.sut.Publish(s.ctx, events))
 
-	var gormEvtStored *modelpkg.Event
-	s.conn.Db().First(&gormEvtStored, s.evtID)
-	s.Require().NotNil(gormEvtStored)
+	var outboxRecordStored *modelpkg.OutboxRecord
+	s.conn.Db().First(&outboxRecordStored, s.evtID)
+	s.Require().NotNil(outboxRecordStored)
 
-	s.Require().Equal(carCreatedEvent.AggregateID, gormEvtStored.AggregateID)
-	s.Require().Equal(carCreatedEvent.AggregateType, gormEvtStored.AggregateType)
+	s.Require().Equal(carCreatedEvent.AggregateID, outboxRecordStored.AggregateID)
+	s.Require().Equal(carCreatedEvent.AggregateType, outboxRecordStored.AggregateType)
+	s.Require().Equal(carCreatedEvent.EventType, outboxRecordStored.EventType)
 
 	var evtPayloadFound *event.CarCreatedPayload
-	s.Require().NoError(Decode(gormEvtStored.Payload, &evtPayloadFound))
+	s.Require().NoError(Decode(outboxRecordStored.Payload, &evtPayloadFound))
 
 	s.Require().Equal(evtPayload.Color, evtPayloadFound.Color)
 	s.Require().Equal(evtPayload.VinNumber, evtPayloadFound.VinNumber)
 	requireEqualDates(evtPayload.CreatedAt, evtPayloadFound.CreatedAt, s.Require())
 	requireEqualDates(evtPayload.UpdatedAt, evtPayloadFound.UpdatedAt, s.Require())
 
-	requireEqualDates(carCreatedEvent.Timestamp, gormEvtStored.Timestamp, s.Require())
+	requireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
 }
 
 func ToTimeHookFunc() mapstructure.DecodeHookFunc {

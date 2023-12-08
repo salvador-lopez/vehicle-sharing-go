@@ -2,11 +2,14 @@ package gorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	"gorm.io/driver/mysql"
+	"github.com/go-sql-driver/mysql"
+	mysqlparser "github.com/pingcap/parser/mysql"
+	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -26,10 +29,15 @@ type Config struct {
 
 type Connection struct {
 	db     *gorm.DB
+	tx     *gorm.DB
 	logger log.Logger
 }
 
 func (c *Connection) Db() *gorm.DB {
+	if c.tx != nil {
+		return c.tx
+	}
+
 	return c.db
 }
 
@@ -42,7 +50,7 @@ func NewConnectionFromConfig(c *Config) (*Connection, error) {
 		c.DatabaseName,
 	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default,
 	})
 
@@ -66,23 +74,20 @@ func NewConnectionFromConfig(c *Config) (*Connection, error) {
 	return &Connection{db: db}, nil
 }
 
-func (c *Connection) Close() error {
-	if c == nil || c.db == nil {
-		return nil
-	}
-
-	sqlDb, err := c.db.DB()
-	if err != nil {
-		return err
-	}
-
-	return sqlDb.Close()
-}
-
 func (c *Connection) Transaction(ctx context.Context, f func(context.Context) error) error {
 	return c.db.Transaction(func(tx *gorm.DB) error {
-		c.db = tx
+		defer func() { c.tx = nil }()
+		c.tx = tx
 
 		return f(ctx)
 	})
+}
+
+func (c *Connection) IsDuplicateEntryErr(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		return mysqlErr.Number == mysqlparser.ErrDupEntry
+	}
+
+	return false
 }

@@ -18,10 +18,6 @@ func NewVIN(number string) (*VIN, error) {
 	return &VIN{number: number}, nil
 }
 
-func FromVINNumber(number string) *VIN {
-	return &VIN{number}
-}
-
 var ErrInvalidVin = errors.New("invalid vin provided")
 
 func guardVIN(number string) error {

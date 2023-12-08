@@ -21,7 +21,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
 	commandpkg "vehicle-sharing-go/pkg/application/command"
-	gorm2 "vehicle-sharing-go/pkg/infrastructure/database/gorm"
+	gormpkg "vehicle-sharing-go/pkg/infrastructure/database/gorm"
 )
 
 func main() {
@@ -32,8 +32,8 @@ func main() {
 		domainF   = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
 		httpPortF = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
 
-		dbUser  = flag.String("db-user", "inventory", "database user")
-		dbPwd   = flag.String("db-password", "inventory", "database password")
+		dbUser  = flag.String("db-user", "root", "database user")
+		dbPwd   = flag.String("db-password", "root", "database password")
 		dbName  = flag.String("db-name", "inventory", "database name")
 		dbHost  = flag.String("db-host", "localhost", "database host")
 		dbPort  = flag.Int("db-port", 3308, "database port")
@@ -45,14 +45,9 @@ func main() {
 	flag.Parse()
 
 	// Setup logger. Replace logger with your own log package of choice.
-	var (
-		logger *log.Logger
-	)
-	{
-		logger = log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
-	}
+	logger := log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
 
-	dbConn, err := gorm2.NewConnectionFromConfig(&gorm2.Config{
+	dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
 		UserName:     *dbUser,
 		Password:     *dbPwd,
 		DatabaseName: *dbName,
@@ -65,25 +60,28 @@ func main() {
 		logger.Fatalf("failed to create db connection: %v", err)
 	}
 
-	// Initialize the services.
-	var (
-		carSvc car.Service
-	)
-	{
-		carSvc = rest.NewCarController(
-			command.NewCreateCarHandler(uuid.New, time.Now, gorm.NewCarRepository(dbConn), dbConn, commandpkg.NewAgRootEventPublisher(gorm2.NewOutboxRepository(dbConn))),
-			inmemory.NewCarQueryService(),
-		)
-	}
+	// Initialize Write Repositories
+	carRepo := gorm.NewCarRepository(dbConn)
+
+	// Initialize AggregateRoot Domain Events Publisher
+	outboxRepo := gormpkg.NewOutboxRepository(dbConn)
+	aggRootEventPublisher := commandpkg.NewAgRootEventPublisher(outboxRepo)
+
+	// Initialize Query Services
+	carQueryService := inmemory.NewCarQueryService()
+
+	// Initialize commandHandlers
+	idGenFn := uuid.New
+	nowFn := time.Now
+
+	createCarHandler := command.NewCreateCarHandler(idGenFn, nowFn, carRepo, dbConn, aggRootEventPublisher)
+
+	// Initialize the http rest controllers.
+	carSvc := rest.NewCarController(createCarHandler, carQueryService)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
-	var (
-		carEndpoints *car.Endpoints
-	)
-	{
-		carEndpoints = car.NewEndpoints(carSvc)
-	}
+	carEndpoints := car.NewEndpoints(carSvc)
 
 	// Create channel used by both the signal handler and server goroutines
 	// to notify the main goroutine when to stop the server.
