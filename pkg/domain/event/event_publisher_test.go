@@ -1,4 +1,4 @@
-package command_test
+package event_test
 
 import (
 	"context"
@@ -9,10 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"vehicle-sharing-go/pkg/application/command"
-	"vehicle-sharing-go/pkg/application/command/mock"
-
 	"vehicle-sharing-go/pkg/domain/event"
+	"vehicle-sharing-go/pkg/domain/event/mock"
 )
 
 func TestPublishRecordedEvents(t *testing.T) {
@@ -22,7 +20,7 @@ func TestPublishRecordedEvents(t *testing.T) {
 		mockCtrl    *gomock.Controller
 		evtRecorder *mock.MockRecorder
 		publisher   *mock.MockPublisher
-		sut         *command.AgRootEventPublisher
+		sut         *event.AgRootEventPublisher
 	)
 
 	setup := func() {
@@ -31,7 +29,7 @@ func TestPublishRecordedEvents(t *testing.T) {
 		mockCtrl = gomock.NewController(t)
 		evtRecorder = mock.NewMockRecorder(mockCtrl)
 		publisher = mock.NewMockPublisher(mockCtrl)
-		sut = command.NewAgRootEventPublisher(publisher)
+		sut = event.NewAgRootEventPublisher(publisher)
 	}
 
 	teardown := func() {

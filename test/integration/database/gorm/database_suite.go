@@ -8,21 +8,29 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	gormpkg "vehicle-sharing-go/pkg/infrastructure/database/gorm"
+	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 )
 
-type databaseSuite struct {
+type DatabaseSuite struct {
 	suite.Suite
 	ctx       context.Context
 	cancelFun context.CancelFunc
 	conn      *gormpkg.Connection
 }
 
-func (s *databaseSuite) SetupSuite() {
+func (s *DatabaseSuite) Ctx() context.Context {
+	return s.ctx
+}
+
+func (s *DatabaseSuite) Conn() *gormpkg.Connection {
+	return s.conn
+}
+
+func (s *DatabaseSuite) SetupSuite() {
 	s.createDb()
 }
 
-func (s *databaseSuite) createDb() {
+func (s *DatabaseSuite) createDb() {
 	port, err := strconv.Atoi(os.Getenv("MYSQL_PORT"))
 	s.Require().NoError(err)
 
@@ -38,12 +46,12 @@ func (s *databaseSuite) createDb() {
 	s.conn = conn
 }
 
-func (s *databaseSuite) SetupTest() {
+func (s *DatabaseSuite) SetupTest() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	s.ctx = ctx
 	s.cancelFun = cancel
 }
 
-func (s *databaseSuite) TearDownTest() {
+func (s *DatabaseSuite) TearDownTest() {
 	s.cancelFun()
 }

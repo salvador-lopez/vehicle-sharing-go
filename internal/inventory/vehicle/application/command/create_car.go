@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
-	commandpkg "vehicle-sharing-go/pkg/application/command"
+	"vehicle-sharing-go/pkg/domain/event"
 )
 
 type CreateCar struct {
@@ -22,14 +22,14 @@ type CreateCarHandler struct {
 	now          func() time.Time
 	carRepo      CarRepository
 	txSession    TransactionalSession
-	evtPublisher *commandpkg.AgRootEventPublisher
+	evtPublisher *event.AgRootEventPublisher
 }
 
 func NewCreateCarHandler(
 	idGen func() uuid.UUID, now func() time.Time,
 	cr CarRepository,
 	txSession TransactionalSession,
-	ep *commandpkg.AgRootEventPublisher,
+	ep *event.AgRootEventPublisher,
 ) *CreateCarHandler {
 	return &CreateCarHandler{idGen: idGen, now: now, carRepo: cr, txSession: txSession, evtPublisher: ep}
 }

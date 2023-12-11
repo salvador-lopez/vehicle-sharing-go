@@ -13,9 +13,9 @@ import (
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest/mock"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/car"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/rest"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/rest/mock"
 )
 
 type carUnitSuite struct {
@@ -24,7 +24,7 @@ type carUnitSuite struct {
 	mockCtrl              *gomock.Controller
 	mockCreateCarCHandler *mock.MockCreateCarCommandHandler
 	mockCarQueryService   *mock.MockFindCarQueryService
-	sut                   *rest.CarController
+	sut                   *rest.CarHandler
 }
 
 func (s *carUnitSuite) SetupTest() {
@@ -34,7 +34,7 @@ func (s *carUnitSuite) SetupTest() {
 	s.mockCarQueryService = mock.NewMockFindCarQueryService(s.mockCtrl)
 	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
 
-	s.sut = rest.NewCarController(s.mockCreateCarCHandler, s.mockCarQueryService)
+	s.sut = rest.NewCarHandler(s.mockCreateCarCHandler, s.mockCarQueryService)
 }
 
 func (s *carUnitSuite) TearDownTest() {

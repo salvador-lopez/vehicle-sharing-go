@@ -16,12 +16,12 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/rest"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
-	commandpkg "vehicle-sharing-go/pkg/application/command"
-	gormpkg "vehicle-sharing-go/pkg/infrastructure/database/gorm"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/car"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/rest"
+	gorm2 "vehicle-sharing-go/pkg/database/gorm"
+	commandpkg "vehicle-sharing-go/pkg/domain/event"
 )
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 	// Setup logger. Replace logger with your own log package of choice.
 	logger := log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
 
-	dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
+	dbConn, err := gorm2.NewConnectionFromConfig(&gorm2.Config{
 		UserName:     *dbUser,
 		Password:     *dbPwd,
 		DatabaseName: *dbName,
@@ -64,7 +64,7 @@ func main() {
 	carRepo := gorm.NewCarRepository(dbConn)
 
 	// Initialize AggregateRoot Domain Events Publisher
-	outboxRepo := gormpkg.NewOutboxRepository(dbConn)
+	outboxRepo := gorm2.NewOutboxRepository(dbConn)
 	aggRootEventPublisher := commandpkg.NewAgRootEventPublisher(outboxRepo)
 
 	// Initialize Query Services
@@ -77,7 +77,7 @@ func main() {
 	createCarHandler := command.NewCreateCarHandler(idGenFn, nowFn, carRepo, dbConn, aggRootEventPublisher)
 
 	// Initialize the http rest controllers.
-	carSvc := rest.NewCarController(createCarHandler, carQueryService)
+	carSvc := rest.NewCarHandler(createCarHandler, carQueryService)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.

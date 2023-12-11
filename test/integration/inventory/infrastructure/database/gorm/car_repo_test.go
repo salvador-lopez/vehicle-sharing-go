@@ -14,28 +14,29 @@ import (
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm/model"
 	domainmodelpkg "vehicle-sharing-go/pkg/domain/model"
+	"vehicle-sharing-go/test/integration/database/gorm"
 )
 
 type carRepoIntegrationSuite struct {
-	databaseSuite
+	gorm.DatabaseSuite
 	carId uuid.UUID
 	sut   *gormvehicle.CarRepository
 }
 
 func (s *carRepoIntegrationSuite) SetupSuite() {
-	s.databaseSuite.SetupSuite()
+	s.DatabaseSuite.SetupSuite()
 	s.initDb()
 	s.carId = uuid.New()
-	s.sut = gormvehicle.NewCarRepository(s.conn)
+	s.sut = gormvehicle.NewCarRepository(s.Conn())
 }
 
 func (s *carRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.conn.Db().AutoMigrate(&model.Car{}))
+	s.Require().NoError(s.Conn().Db().AutoMigrate(&model.Car{}))
 }
 
 func (s *carRepoIntegrationSuite) TearDownTest() {
-	s.conn.Db().Delete(&model.Car{}, s.carId)
-	s.databaseSuite.TearDownTest()
+	s.Conn().Db().Delete(&model.Car{}, s.carId)
+	s.DatabaseSuite.TearDownTest()
 }
 
 func TestCarRepoIntegrationSuite(t *testing.T) {
@@ -53,15 +54,15 @@ func (s *carRepoIntegrationSuite) TestCreate() {
 		},
 	}
 	car := domain.CarFromModel(carModel)
-	s.Require().NoError(s.sut.Create(s.ctx, car))
+	s.Require().NoError(s.sut.Create(s.Ctx(), car))
 
 	var gormCarStored *model.Car
-	s.conn.Db().First(&gormCarStored, s.carId)
+	s.Conn().Db().First(&gormCarStored, s.carId)
 	s.Require().NotNil(gormCarStored.Car)
 
 	s.Require().Equal(carModel.VinNumber, gormCarStored.VinNumber)
 	s.Require().Equal(carModel.Color, gormCarStored.Color)
 
-	requireEqualDates(carModel.CreatedAt, gormCarStored.CreatedAt, s.Require())
-	requireEqualDates(carModel.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
+	gorm.RequireEqualDates(carModel.CreatedAt, gormCarStored.CreatedAt, s.Require())
+	gorm.RequireEqualDates(carModel.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
 }

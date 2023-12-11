@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	cli "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/http/cli/inventory_vehicles"
+	cli "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/http/cli/inventory_vehicles"
 
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"

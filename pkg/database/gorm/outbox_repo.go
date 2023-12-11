@@ -3,8 +3,8 @@ package gorm
 import (
 	"context"
 
+	"vehicle-sharing-go/pkg/database/gorm/model"
 	"vehicle-sharing-go/pkg/domain/event"
-	"vehicle-sharing-go/pkg/infrastructure/database/gorm/model"
 )
 
 type OutboxRepository struct {

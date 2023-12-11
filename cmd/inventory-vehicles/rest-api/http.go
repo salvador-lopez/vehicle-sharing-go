@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	carsvr "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/http/car/server"
+	carsvr "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/http/car/server"
 
 	goahttp "goa.design/goa/v3/http"
 	httpmdlwr "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
 
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/controller/gen/car"
+	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/car"
 )
 
 // handleHTTPServer starts configures and starts a HTTP server on the given

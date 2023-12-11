@@ -11,23 +11,24 @@ import (
 
 	"vehicle-sharing-go/internal/inventory/vehicle/application/projection"
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
+	"vehicle-sharing-go/test/integration/database/gorm"
 )
 
 type carProjectionRepoIntegrationSuite struct {
-	databaseSuite
+	gorm.DatabaseSuite
 	carId uuid.UUID
 	sut   *gormvehicle.CarProjectionRepository
 }
 
 func (s *carProjectionRepoIntegrationSuite) SetupSuite() {
-	s.databaseSuite.SetupSuite()
+	s.DatabaseSuite.SetupSuite()
 	s.initDb()
 	s.carId = uuid.New()
-	s.sut = gormvehicle.NewCarProjectionRepository(s.conn.Db())
+	s.sut = gormvehicle.NewCarProjectionRepository(s.Conn().Db())
 }
 
 func (s *carProjectionRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.conn.Db().AutoMigrate(&projection.Car{}))
+	s.Require().NoError(s.Conn().Db().AutoMigrate(&projection.Car{}))
 }
 
 func TestCarProjectorIntegrationSuite(t *testing.T) {
@@ -53,10 +54,10 @@ func (s *carProjectionRepoIntegrationSuite) TestProject() {
 		),
 		Color: "Spectral Blue",
 	}
-	s.Require().NoError(s.sut.Create(s.ctx, carProjectionExpected))
+	s.Require().NoError(s.sut.Create(s.Ctx(), carProjectionExpected))
 
 	var carProjection *projection.Car
-	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Find(&carProjection, s.carId).Error)
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjection, s.carId).Error)
 
 	s.requireEqualProjections(carProjectionExpected, carProjection)
 }
@@ -81,17 +82,17 @@ func (s *carProjectionRepoIntegrationSuite) TestFind() {
 		Color: "Sapphire Graphite",
 	}
 
-	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Create(carProjectionExpected).Error)
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Create(carProjectionExpected).Error)
 
 	var carProjection *projection.Car
-	s.Require().NoError(s.conn.Db().WithContext(s.ctx).Find(&carProjection, s.carId).Error)
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjection, s.carId).Error)
 
 	s.requireEqualProjections(carProjectionExpected, carProjection)
 }
 
 func (s *carProjectionRepoIntegrationSuite) TearDownTest() {
-	s.conn.Db().Delete(&projection.Car{}, s.carId)
-	s.databaseSuite.TearDownTest()
+	s.Conn().Db().Delete(&projection.Car{}, s.carId)
+	s.DatabaseSuite.TearDownTest()
 }
 
 func (s *carProjectionRepoIntegrationSuite) buildVinDataProjection(
@@ -122,8 +123,8 @@ func (s *carProjectionRepoIntegrationSuite) buildVinDataProjection(
 
 func (s *carProjectionRepoIntegrationSuite) requireEqualProjections(expected *projection.Car, actual *projection.Car) {
 	s.Require().Equal(expected.ID, actual.ID)
-	requireEqualDates(expected.CreatedAt, actual.CreatedAt, s.Require())
-	requireEqualDates(expected.UpdatedAt, actual.UpdatedAt, s.Require())
+	gorm.RequireEqualDates(expected.CreatedAt, actual.CreatedAt, s.Require())
+	gorm.RequireEqualDates(expected.UpdatedAt, actual.UpdatedAt, s.Require())
 	s.Require().Equal(expected.VIN, actual.VIN)
 	s.Require().Equal(expected.Country, actual.Country)
 	s.Require().Equal(expected.Manufacturer, actual.Manufacturer)

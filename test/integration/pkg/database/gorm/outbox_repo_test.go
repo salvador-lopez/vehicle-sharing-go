@@ -12,33 +12,34 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
+	gormpkg "vehicle-sharing-go/pkg/database/gorm"
+	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
 	eventpkg "vehicle-sharing-go/pkg/domain/event"
-	"vehicle-sharing-go/pkg/infrastructure/database/gorm"
-	modelpkg "vehicle-sharing-go/pkg/infrastructure/database/gorm/model"
+	"vehicle-sharing-go/test/integration/database/gorm"
 )
 
 type outboxRepoIntegrationSuite struct {
-	databaseSuite
+	gorm.DatabaseSuite
 	evtID      uuid.UUID
 	appID      string
 	kafkaTopic string
-	sut        *gorm.OutboxRepository
+	sut        *gormpkg.OutboxRepository
 }
 
 func (s *outboxRepoIntegrationSuite) SetupSuite() {
-	s.databaseSuite.SetupSuite()
+	s.DatabaseSuite.SetupSuite()
 	s.initDb()
 	s.evtID = uuid.New()
-	s.sut = gorm.NewOutboxRepository(s.conn)
+	s.sut = gormpkg.NewOutboxRepository(s.Conn())
 }
 
 func (s *outboxRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.conn.Db().AutoMigrate(&modelpkg.OutboxRecord{}))
+	s.Require().NoError(s.Conn().Db().AutoMigrate(&modelpkg.OutboxRecord{}))
 }
 
 func (s *outboxRepoIntegrationSuite) TearDownTest() {
-	s.conn.Db().Delete(&modelpkg.OutboxRecord{}, s.evtID)
-	s.databaseSuite.TearDownTest()
+	s.Conn().Db().Delete(&modelpkg.OutboxRecord{}, s.evtID)
+	s.DatabaseSuite.TearDownTest()
 }
 
 func TestOutboxRepoIntegrationSuite(t *testing.T) {
@@ -64,10 +65,10 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 		Timestamp:     now,
 	}
 	events = append(events, carCreatedEvent)
-	s.Require().NoError(s.sut.Publish(s.ctx, events))
+	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
 
 	var outboxRecordStored *modelpkg.OutboxRecord
-	s.conn.Db().First(&outboxRecordStored, s.evtID)
+	s.Conn().Db().First(&outboxRecordStored, s.evtID)
 	s.Require().NotNil(outboxRecordStored)
 
 	s.Require().Equal(carCreatedEvent.AggregateID, outboxRecordStored.AggregateID)
@@ -79,10 +80,10 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 
 	s.Require().Equal(evtPayload.Color, evtPayloadFound.Color)
 	s.Require().Equal(evtPayload.VinNumber, evtPayloadFound.VinNumber)
-	requireEqualDates(evtPayload.CreatedAt, evtPayloadFound.CreatedAt, s.Require())
-	requireEqualDates(evtPayload.UpdatedAt, evtPayloadFound.UpdatedAt, s.Require())
+	gorm.RequireEqualDates(evtPayload.CreatedAt, evtPayloadFound.CreatedAt, s.Require())
+	gorm.RequireEqualDates(evtPayload.UpdatedAt, evtPayloadFound.UpdatedAt, s.Require())
 
-	requireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
+	gorm.RequireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
 }
 
 func ToTimeHookFunc() mapstructure.DecodeHookFunc {

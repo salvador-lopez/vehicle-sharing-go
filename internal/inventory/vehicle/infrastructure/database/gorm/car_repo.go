@@ -6,7 +6,7 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm/model"
-	"vehicle-sharing-go/pkg/infrastructure/database/gorm"
+	"vehicle-sharing-go/pkg/database/gorm"
 )
 
 type CarRepository struct {

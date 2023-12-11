@@ -18,9 +18,8 @@ import (
 	"vehicle-sharing-go/internal/inventory/vehicle/domain"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/event"
 	"vehicle-sharing-go/internal/inventory/vehicle/domain/model"
-	commandpkg "vehicle-sharing-go/pkg/application/command"
-	mockpkg "vehicle-sharing-go/pkg/application/command/mock"
 	eventpkg "vehicle-sharing-go/pkg/domain/event"
+	mockeventpkg "vehicle-sharing-go/pkg/domain/event/mock"
 	modelpkg "vehicle-sharing-go/pkg/domain/model"
 )
 
@@ -37,8 +36,8 @@ type createCarUnitSuite struct {
 	now                 func() time.Time
 	mockCarRepo         *mock.MockCarRepository
 	mockTxSession       *mock.MockTransactionalSession
-	mockPublisher       *mockpkg.MockPublisher
-	aggRootEvtPublisher *commandpkg.AgRootEventPublisher
+	mockPublisher       *mockeventpkg.MockPublisher
+	aggRootEvtPublisher *eventpkg.AgRootEventPublisher
 	sut                 *command.CreateCarHandler
 }
 
@@ -54,8 +53,8 @@ func (s *createCarUnitSuite) SetupTest() {
 
 	s.mockCarRepo = mock.NewMockCarRepository(s.mockCtrl)
 	s.mockTxSession = mock.NewMockTransactionalSession(s.mockCtrl)
-	s.mockPublisher = mockpkg.NewMockPublisher(s.mockCtrl)
-	s.aggRootEvtPublisher = commandpkg.NewAgRootEventPublisher(s.mockPublisher)
+	s.mockPublisher = mockeventpkg.NewMockPublisher(s.mockCtrl)
+	s.aggRootEvtPublisher = eventpkg.NewAgRootEventPublisher(s.mockPublisher)
 
 	s.sut = command.NewCreateCarHandler(s.idGen, s.now, s.mockCarRepo, s.mockTxSession, s.aggRootEvtPublisher)
 }
