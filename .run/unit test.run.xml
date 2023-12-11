@@ -2,7 +2,10 @@
   <configuration default="false" name="unit test" type="GoTestRunConfiguration" factoryName="Go Test">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
-    <go_parameters value="-race -covermode atomic -tags=unit" />
+    <go_parameters value="-coverpkg=./... -covermode atomic -tags=unit" />
+    <envs>
+      <env name="CGO_ENABLED" value="0" />
+    </envs>
     <kind value="DIRECTORY" />
     <package value="vehicle-sharing-go/test/integration/inventory/infrastructure/database/gorm" />
     <directory value="$PROJECT_DIR$" />

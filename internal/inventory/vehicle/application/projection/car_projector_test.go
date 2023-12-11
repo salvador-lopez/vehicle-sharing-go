@@ -1,3 +1,5 @@
+//go:build unit || unit_inventory
+
 package projection_test
 
 import (

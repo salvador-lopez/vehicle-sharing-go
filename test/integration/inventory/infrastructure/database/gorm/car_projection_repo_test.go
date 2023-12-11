@@ -1,4 +1,4 @@
-//go:build integration_inventory
+//go:build integration || integration_inventory
 
 package gorm
 

@@ -12,10 +12,6 @@ type BaseEntity struct {
 	updatedAt time.Time
 }
 
-func (e *BaseEntity) ID() uuid.UUID {
-	return e.id
-}
-
 func (e *BaseEntity) CreatedAt() time.Time {
 	return e.createdAt
 }

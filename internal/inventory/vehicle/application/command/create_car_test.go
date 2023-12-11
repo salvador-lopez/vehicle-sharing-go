@@ -1,4 +1,4 @@
-//go:build unit_inventory
+//go:build unit || unit_inventory
 
 package command_test
 

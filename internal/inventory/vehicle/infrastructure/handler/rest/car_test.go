@@ -1,3 +1,5 @@
+//go:build unit || unit_inventory
+
 package rest_test
 
 import (
