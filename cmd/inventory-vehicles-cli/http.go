@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	cli "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/http/cli/inventory_vehicles"
-
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
+
+	"vehicle-sharing-go/internal/inventory/vehicle/handler/gen/http/cli/inventory_vehicles"
 )
 
 func doHTTP(scheme, host string, timeout int, debug bool) (goa.Endpoint, interface{}, error) {

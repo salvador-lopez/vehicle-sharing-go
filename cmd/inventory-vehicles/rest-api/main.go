@@ -15,11 +15,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"vehicle-sharing-go/internal/inventory/vehicle/application/command"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/gorm"
-	inmemory "vehicle-sharing-go/internal/inventory/vehicle/infrastructure/database/in-memory"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/gen/car"
-	"vehicle-sharing-go/internal/inventory/vehicle/infrastructure/handler/rest"
+	"vehicle-sharing-go/internal/inventory/vehicle/command"
+	"vehicle-sharing-go/internal/inventory/vehicle/database/gorm"
+	inmemory "vehicle-sharing-go/internal/inventory/vehicle/database/in-memory"
+	"vehicle-sharing-go/internal/inventory/vehicle/handler/gen/car"
+	"vehicle-sharing-go/internal/inventory/vehicle/handler/rest"
 	gorm2 "vehicle-sharing-go/pkg/database/gorm"
 	commandpkg "vehicle-sharing-go/pkg/domain/event"
 )
