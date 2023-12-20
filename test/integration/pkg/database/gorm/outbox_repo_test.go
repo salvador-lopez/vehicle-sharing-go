@@ -76,7 +76,7 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	s.Require().Equal(carCreatedEvent.EventType, outboxRecordStored.EventType)
 
 	var evtPayloadFound *event.CarCreatedPayload
-	s.Require().NoError(Decode(outboxRecordStored.Payload, &evtPayloadFound))
+	s.Require().NoError(decode(outboxRecordStored.Payload, &evtPayloadFound))
 
 	s.Require().Equal(evtPayload.Color, evtPayloadFound.Color)
 	s.Require().Equal(evtPayload.VinNumber, evtPayloadFound.VinNumber)
@@ -86,7 +86,7 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	gorm.RequireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
 }
 
-func ToTimeHookFunc() mapstructure.DecodeHookFunc {
+func toTimeHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
 		t reflect.Type,
@@ -108,11 +108,11 @@ func ToTimeHookFunc() mapstructure.DecodeHookFunc {
 	}
 }
 
-func Decode(input any, result interface{}) error {
+func decode(input any, result interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Metadata: nil,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			ToTimeHookFunc()),
+			toTimeHookFunc()),
 		Result: result,
 	})
 	if err != nil {

@@ -19,7 +19,7 @@ func NewCarProjectionRepository(db *gorm.DB) *CarProjectionRepository {
 }
 
 func (c *CarProjectionRepository) Create(ctx context.Context, car *projection.Car) error {
-	return c.db.WithContext(ctx).Create(car).Error
+	return c.db.WithContext(ctx).Create(model.CarProjection{Car: car}).Error
 }
 
 func (c *CarProjectionRepository) Find(ctx context.Context, id uuid.UUID) (*projection.Car, error) {

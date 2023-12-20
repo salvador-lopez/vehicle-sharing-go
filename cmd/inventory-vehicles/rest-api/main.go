@@ -45,7 +45,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger. Replace logger with your own log package of choice.
-	logger := log.New(os.Stderr, "[inventoryvehicles] ", log.Ltime)
+	logger := log.New(os.Stderr, "[inventory-vehicles-rest-api] ", log.Ltime)
 
 	dbConn, err := gorm2.NewConnectionFromConfig(&gorm2.Config{
 		UserName:     *dbUser,

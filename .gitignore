@@ -21,3 +21,4 @@
 internal/inventory/vehicle/infrastructure/controller/gen
 
 cmd/inventory-vehicles/message-relay/cmd/message-relay.yaml
+cmd/inventory-vehicles/domain-event-consumer/cmd/consumer.yaml

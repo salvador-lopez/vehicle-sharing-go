@@ -8,8 +8,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
+	gormlibrary "gorm.io/gorm"
 
 	gormvehicle "vehicle-sharing-go/internal/inventory/vehicle/database/gorm"
+	"vehicle-sharing-go/internal/inventory/vehicle/database/gorm/model"
 	"vehicle-sharing-go/internal/inventory/vehicle/projection"
 	"vehicle-sharing-go/test/integration/database/gorm"
 )
@@ -28,7 +30,7 @@ func (s *carProjectionRepoIntegrationSuite) SetupSuite() {
 }
 
 func (s *carProjectionRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.Conn().Db().AutoMigrate(&projection.Car{}))
+	s.Require().NoError(s.Conn().Db().AutoMigrate(&model.CarProjection{}))
 }
 
 func TestCarProjectorIntegrationSuite(t *testing.T) {
@@ -56,10 +58,10 @@ func (s *carProjectionRepoIntegrationSuite) TestProject() {
 	}
 	s.Require().NoError(s.sut.Create(s.Ctx(), carProjectionExpected))
 
-	var carProjection *projection.Car
-	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjection, s.carId).Error)
+	var carProjectionModel *model.CarProjection
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjectionModel, s.carId).Error)
 
-	s.requireEqualProjections(carProjectionExpected, carProjection)
+	s.requireEqualProjections(carProjectionExpected, carProjectionModel.Car)
 }
 
 func (s *carProjectionRepoIntegrationSuite) TestFind() {
@@ -82,16 +84,16 @@ func (s *carProjectionRepoIntegrationSuite) TestFind() {
 		Color: "Sapphire Graphite",
 	}
 
-	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Create(carProjectionExpected).Error)
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Create(&model.CarProjection{Car: carProjectionExpected}).Error)
 
-	var carProjection *projection.Car
-	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjection, s.carId).Error)
+	var carProjectionModel *model.CarProjection
+	s.Require().NoError(s.Conn().Db().WithContext(s.Ctx()).Find(&carProjectionModel, s.carId).Error)
 
-	s.requireEqualProjections(carProjectionExpected, carProjection)
+	s.requireEqualProjections(carProjectionExpected, carProjectionModel.Car)
 }
 
 func (s *carProjectionRepoIntegrationSuite) TearDownTest() {
-	s.Conn().Db().Delete(&projection.Car{}, s.carId)
+	s.Conn().Db().Session(&gormlibrary.Session{AllowGlobalUpdate: true}).Delete(&model.CarProjection{})
 	s.DatabaseSuite.TearDownTest()
 }
 
