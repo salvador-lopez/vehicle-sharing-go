@@ -18,11 +18,11 @@ services:
     ports:
       - "3308:3306"
 
-  redis-inventory:
+  redis:
     image: redis:6.2.5
     command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
-      - inventory-session-data:/data
+      - session-data:/data
     ports:
       - "6379:6379"
 
@@ -34,6 +34,9 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    volumes:
+      -  zookeper-data:/var/lib/zookeeper/data
+      -  zookeper-datalog:/var/lib/zookeeper/log
 
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
@@ -62,9 +65,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://localhost:19092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka-broker-1-data:/var/lib/kafka/data
 
 volumes:
   inventory-db-data:
-  inventory-session-data:
-  inventory-zookeper-data:
-  inventory-zookeper-datalog:
+  session-data:
+  zookeper-data:
+  zookeper-datalog:
+  kafka-broker-1-data:

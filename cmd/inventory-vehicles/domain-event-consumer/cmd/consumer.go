@@ -82,37 +82,39 @@ var runCmd = &cobra.Command{
 			panic(err)
 		}
 
-		// A signal handler or similar could be used to set this to false to break the loop.
-		run := true
+		go func() {
+			for {
+				msg, err := c.ReadMessage(time.Second)
+				if err == nil {
+					logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
 
-		for run {
-			msg, err := c.ReadMessage(time.Second)
-			if err == nil {
-				logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
+					aggregateID, err := uuid.Parse(string(msg.Key))
+					if err != nil {
+						logger.Printf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+						errc <- err
+					}
 
-				aggregateID, err := uuid.Parse(string(msg.Key))
-				if err != nil {
-					logger.Fatalf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+					var payload *event.CarCreatedPayload
+					err = json.Unmarshal(msg.Value, &payload)
+					if err != nil {
+						logger.Printf("Error Unmarshalling message: %v (%v)\n", err, msg)
+						errc <- err
+					}
+
+					err = carProjector.ProjectCarCreated(ctx, aggregateID, payload)
+					if err != nil {
+						logger.Printf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
+						errc <- err
+					}
+				} else if !err.(kafka.Error).IsTimeout() {
+					// The client will automatically try to recover from all errors.
+					// Timeout is not considered an error because it is raised by
+					// ReadMessage in absence of messages.
+					logger.Printf("Consumer error: %v (%v)\n", err, msg)
+					errc <- err
 				}
-
-				var payload *event.CarCreatedPayload
-				err = json.Unmarshal(msg.Value, &payload)
-				if err != nil {
-					logger.Fatalf("Error Unmarshalling message: %v (%v)\n", err, msg)
-				}
-
-				err = carProjector.ProjectCarCreated(ctx, aggregateID, payload)
-				if err != nil {
-					logger.Fatalf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
-				}
-			} else if !err.(kafka.Error).IsTimeout() {
-				// The client will automatically try to recover from all errors.
-				// Timeout is not considered an error because it is raised by
-				// ReadMessage in absence of messages.
-				logger.Fatalf("Consumer error: %v (%v)\n", err, msg)
-
 			}
-		}
+		}()
 
 		// Wait for signal.
 		logger.Printf("exiting (%v)", <-errc)
