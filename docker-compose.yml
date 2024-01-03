@@ -3,7 +3,7 @@ version: '3.4'
 services:
   mysql-inventory:
     platform: linux/x86_64
-    image: mysql:8.0.26
+    image: mysql:8.2
     volumes:
       - inventory-db-data:/var/lib/mysql
       - ./docker/mysql/inventory-init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -19,7 +19,7 @@ services:
       - "3308:3306"
 
   redis:
-    image: redis:6.2.5
+    image: redis:7.0
     command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - session-data:/data
@@ -27,50 +27,58 @@ services:
       - "6379:6379"
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.4.3
+    platform: linux/x86_64
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
     volumes:
       -  zookeper-data:/var/lib/zookeeper/data
       -  zookeper-datalog:/var/lib/zookeeper/log
 
-  schema-registry:
-    image: confluentinc/cp-schema-registry:latest
-    hostname: schema-registry
-    depends_on:
-      - kafka-broker-1
-    ports:
-      - "8081:8081"
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
-      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://localhost:19092
-      SCHEMA_REGISTRY_DEBUG: 'true'
-
-  kafka-broker-1:
-    image: confluentinc/cp-kafka:latest
-    hostname: kafka-broker-1
+  broker:
+    image: confluentinc/cp-kafka:7.4.3
+    hostname: broker
     ports:
       - "19092:19092"
+      - "9092:9092"
     depends_on:
       - zookeeper
     environment:
-      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://localhost:19092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://localhost:19092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_MIN_INSYNC_REPLICAS: '1'
     volumes:
-      - kafka-broker-1-data:/var/lib/kafka/data
+      - broker-data:/var/lib/kafka/data
+
+  # This "container" is a workaround to pre-create topics
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.4.3
+    hostname: kafka-setup
+    container_name: kafka-setup
+    depends_on:
+      - broker
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server broker:9092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server broker:9092 --create --if-not-exists --topic inventory-vehicles-car --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server broker:9092 --list
+      "
 
 volumes:
   inventory-db-data:
   session-data:
   zookeper-data:
   zookeper-datalog:
-  kafka-broker-1-data:
+  broker-data:
