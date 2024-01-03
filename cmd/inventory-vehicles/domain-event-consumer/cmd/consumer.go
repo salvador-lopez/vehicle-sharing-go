@@ -52,8 +52,8 @@ var runCmd = &cobra.Command{
 		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
 
 		dbConn, err := gorm2.NewConnectionFromConfig(&gorm2.Config{
-			UserName:     "root",
-			Password:     "root",
+			UserName:     "inventory",
+			Password:     "inventory",
 			DatabaseName: "inventory",
 			Host:         "localhost",
 			Port:         3308,
@@ -113,6 +113,8 @@ var runCmd = &cobra.Command{
 				}
 			}
 		}()
+
+		logger.Println("Consumer started successfully")
 
 		// Wait for signal.
 		logger.Printf("exiting (%v)", <-errc)

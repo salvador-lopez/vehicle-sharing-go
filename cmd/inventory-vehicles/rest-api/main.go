@@ -32,8 +32,8 @@ func main() {
 		domainF   = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
 		httpPortF = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
 
-		dbUser  = flag.String("db-user", "root", "database user")
-		dbPwd   = flag.String("db-password", "root", "database password")
+		dbUser  = flag.String("db-user", "inventory", "database user")
+		dbPwd   = flag.String("db-password", "inventory", "database password")
 		dbName  = flag.String("db-name", "inventory", "database name")
 		dbHost  = flag.String("db-host", "localhost", "database host")
 		dbPort  = flag.Int("db-port", 3308, "database port")
