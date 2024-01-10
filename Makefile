@@ -1,9 +1,3 @@
-mysqlUser=inventory
-mysqlPassword=inventory
-mysqlDatabase=inventory
-mysqlHost=localhost
-mysqlPort=3308
-
 mock-gen:
 	go generate ./...
 
