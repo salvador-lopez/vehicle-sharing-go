@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	mysqlparser "github.com/pingcap/parser/mysql"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -86,7 +85,7 @@ func (c *Connection) Transaction(ctx context.Context, f func(context.Context) er
 func (c *Connection) IsDuplicateEntryErr(err error) bool {
 	var mysqlErr *mysql.MySQLError
 	if errors.As(err, &mysqlErr) {
-		return mysqlErr.Number == mysqlparser.ErrDupEntry
+		return mysqlErr.Number == 1062
 	}
 
 	return false
