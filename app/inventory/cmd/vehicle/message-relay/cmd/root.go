@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-)
 
-var cfgFile string
+	"vehicle-sharing-go/pkg/cmd"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,26 +24,9 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .message-relay.yaml)")
+	cobra.OnInitialize(func() {
+		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay/cmd", "message-relay"))
+	})
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		viper.AddConfigPath("./cmd/inventory-vehicles/message-relay/cmd")
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("message-relay")
-	}
-
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
 }

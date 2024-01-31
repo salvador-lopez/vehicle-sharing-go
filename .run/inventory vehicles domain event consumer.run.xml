@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="start" />
     <kind value="PACKAGE" />
-    <package value="vehicle-sharing-go/cmd/inventory-vehicles/domain-event-consumer" />
+    <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/domain-event-consumer" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <method v="2" />
