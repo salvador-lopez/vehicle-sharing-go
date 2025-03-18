@@ -1,6 +1,6 @@
 module vehicle-sharing-go/app/inventory
 
-go 1.20
+go 1.24
 
 require (
 	github.com/Shopify/sarama v1.37.2
