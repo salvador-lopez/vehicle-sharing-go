@@ -1,8 +1,5 @@
-version: '3.4'
-
 services:
   mysql-inventory:
-    platform: linux/x86_64
     image: mysql:8.2
     volumes:
       - inventory-db-data:/var/lib/mysql
@@ -28,7 +25,6 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.3
-    platform: linux/x86_64
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
