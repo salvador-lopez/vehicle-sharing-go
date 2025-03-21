@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,8 +31,6 @@ func NewCreateCarHandler(
 ) *CreateCarHandler {
 	return &CreateCarHandler{idGen: idGen, now: now, carRepo: cr, txSession: txSession, evtPublisher: ep}
 }
-
-var ErrCarAlreadyExists = errors.New("car already exist")
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
 	vin, err := domain.NewVIN(cmd.VIN)

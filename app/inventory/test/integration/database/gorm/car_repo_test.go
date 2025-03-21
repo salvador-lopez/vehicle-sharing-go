@@ -5,6 +5,7 @@ package gorm
 import (
 	"testing"
 	"time"
+	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -66,4 +67,21 @@ func (s *carRepoIntegrationSuite) TestCreate() {
 
 	gorm.RequireEqualDates(carModel.CreatedAt, gormCarStored.CreatedAt, s.Require())
 	gorm.RequireEqualDates(carModel.UpdatedAt, gormCarStored.UpdatedAt, s.Require())
+}
+
+func (s *carRepoIntegrationSuite) TestCreateSameCarTwiceReturnErrCarAlreadyExist() {
+	carModel := &domainmodel.Car{
+		VinNumber: "4Y1SL65848Z411439",
+		Color:     "Spectral Blue",
+		AggregateRoot: &domainmodelpkg.AggregateRoot{
+			ID:        s.carId,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	}
+	car := domain.CarFromModel(carModel)
+	s.Require().NoError(s.sut.Create(s.Ctx(), car))
+	err := s.sut.Create(s.Ctx(), car)
+	s.Require().ErrorIs(err, pkgdomain.ErrConflict)
+	s.Require().EqualError(err, "domain conflict: car already exist")
 }

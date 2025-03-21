@@ -2,10 +2,10 @@ package gorm
 
 import (
 	"context"
-
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
+	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 )
@@ -25,7 +25,7 @@ func (c *CarRepository) Create(ctx context.Context, car *domain.Car) error {
 
 	if err != nil {
 		if c.conn.IsDuplicateEntryErr(err) {
-			return command.ErrCarAlreadyExists
+			return pkgdomain.WrapErrConflict(command.ErrCarAlreadyExists)
 		}
 
 		return err
