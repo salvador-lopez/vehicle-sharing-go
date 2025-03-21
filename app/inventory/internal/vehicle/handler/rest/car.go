@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
+	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	"github.com/google/uuid"
 
@@ -72,7 +73,7 @@ func (v CarHandler) Create(ctx context.Context, payload *car.CreatePayload) (err
 		Color: payload.Color,
 	})
 	if err != nil {
-		if errors.Is(err, command.ErrCarAlreadyExists) {
+		if errors.Is(err, pkgdomain.ErrConflict) {
 			err = car.MakeConflict(err)
 			return
 		}

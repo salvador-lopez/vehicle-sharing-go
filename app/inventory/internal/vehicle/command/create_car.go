@@ -5,11 +5,9 @@ import (
 	"errors"
 	"time"
 
-	domain2 "vehicle-sharing-go/app/inventory/internal/vehicle/domain"
-
-	"vehicle-sharing-go/pkg/domain/event"
-
 	"github.com/google/uuid"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
+	"vehicle-sharing-go/pkg/domain/event"
 )
 
 type CreateCar struct {
@@ -38,11 +36,11 @@ func NewCreateCarHandler(
 var ErrCarAlreadyExists = errors.New("car already exist")
 
 func (h *CreateCarHandler) Handle(ctx context.Context, cmd *CreateCar) error {
-	vin, err := domain2.NewVIN(cmd.VIN)
+	vin, err := domain.NewVIN(cmd.VIN)
 	if err != nil {
 		return err
 	}
-	car := domain2.NewCar(cmd.ID, vin, cmd.Color, h.idGen, h.now)
+	car := domain.NewCar(cmd.ID, vin, cmd.Color, h.idGen, h.now)
 
 	return h.txSession.Transaction(ctx, func(ctx context.Context) error {
 		err = h.carRepo.Create(ctx, car)

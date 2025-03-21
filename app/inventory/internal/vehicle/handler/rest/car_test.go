@@ -7,6 +7,7 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"vehicle-sharing-go/pkg/domain"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -184,7 +185,7 @@ func (s *carUnitSuite) TestCreate() {
 		vinNumber   string
 		color       string
 		cHandlerErr error
-		sutErrMsg   string
+		sutErr      error
 		goaErrName  string
 	}{
 		{
@@ -194,12 +195,21 @@ func (s *carUnitSuite) TestCreate() {
 			color:     "Spectral Blue",
 		},
 		{
+			name:        "Return conflict goa.ServiceError when command handler return domain conflict error",
+			carID:       uuid.New(),
+			vinNumber:   "4Z1SL65848Z411440",
+			color:       "Black Bullet",
+			cHandlerErr: domain.ErrConflict,
+			sutErr:      domain.ErrConflict,
+			goaErrName:  "conflict",
+		},
+		{
 			name:        "Return internal goa.ServiceError when command handler return error",
 			carID:       uuid.New(),
 			vinNumber:   "4Z1SL65848Z411440",
 			color:       "Black Bullet",
 			cHandlerErr: errors.New("command handler err"),
-			sutErrMsg:   rest.ErrInternal.Error(),
+			sutErr:      rest.ErrInternal,
 			goaErrName:  "internal",
 		},
 	}
@@ -219,14 +229,15 @@ func (s *carUnitSuite) TestCreate() {
 			payload := &car.CreatePayload{ID: tt.carID.String(), Vin: car.Vin(tt.vinNumber), Color: tt.color}
 			err := s.sut.Create(s.ctx, payload)
 
-			if tt.sutErrMsg == "" {
+			if tt.sutErr == nil {
 				s.Require().NoError(err)
 				return
 			}
-			sErr, ok := err.(*goa.ServiceError)
+			var sErr *goa.ServiceError
+			ok := errors.As(err, &sErr)
 			s.Require().True(ok)
 			s.Require().Equal(tt.goaErrName, sErr.Name)
-			s.Require().EqualError(sErr, tt.sutErrMsg)
+			s.Require().EqualError(sErr, tt.sutErr.Error())
 		})
 	}
 }
