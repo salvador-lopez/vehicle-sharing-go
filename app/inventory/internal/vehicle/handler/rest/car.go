@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gen/car"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 

@@ -12,14 +12,15 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
+	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
 
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
-	inmemory "vehicle-sharing-go/app/inventory/internal/vehicle/database/in-memory"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 	commandpkg "vehicle-sharing-go/pkg/domain/event"
@@ -63,13 +64,21 @@ func main() {
 
 	// Initialize Write Repositories
 	carRepo := gorm.NewCarRepository(dbConn)
+	err = dbConn.Db().AutoMigrate(&model.Car{})
+	if err != nil {
+		logger.Fatalf("AutoMigrate Car model failed: %v", err)
+	}
 
 	// Initialize AggregateRoot Domain Events Publisher
 	outboxRepo := gormpkg.NewOutboxRepository(dbConn)
+	err = dbConn.Db().AutoMigrate(&modelpkg.OutboxRecord{})
+	if err != nil {
+		logger.Fatalf("AutoMigrate Outbox model failed: %v", err)
+	}
 	aggRootEventPublisher := commandpkg.NewAgRootEventPublisher(outboxRepo)
 
 	// Initialize Query Services
-	carQueryService := inmemory.NewCarQueryService()
+	carQueryService := gorm.NewCarProjectionRepository(dbConn.Db())
 
 	// Initialize commandHandlers
 	idGenFn := uuid.New

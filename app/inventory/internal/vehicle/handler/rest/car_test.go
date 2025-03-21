@@ -14,8 +14,8 @@ import (
 	goa "goa.design/goa/v3/pkg"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/mock"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )

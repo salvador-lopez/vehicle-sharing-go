@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	vehiclemodel "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 
@@ -67,6 +68,10 @@ var runCmd = &cobra.Command{
 
 		// Initialize Write Repositories
 		carRepo := gorm.NewCarProjectionRepository(dbConn.Db())
+		err = dbConn.Db().AutoMigrate(&vehiclemodel.CarProjection{})
+		if err != nil {
+			logger.Fatalf("AutoMigrate CarProjection model failed: %v", err)
+		}
 
 		carProjector := projection.NewCarProjector(vinDecoderFake{}, carRepo)
 

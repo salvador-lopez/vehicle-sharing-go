@@ -8,7 +8,9 @@ var vinData = ResultType("vin_data", func() {
 	Description("decoded vin data")
 	TypeName("vinData")
 	Attributes(func() {
-		Attribute("vin", vin)
+		Attribute("vin", vin, func() {
+			Example("1HGCM82633A123456")
+		})
 		Attribute("country", String)
 		Attribute("manufacturer", String)
 		Attribute("brand", String)
@@ -56,7 +58,9 @@ var _ = Service("car", func() {
 			Attribute("id", String, "Car id in uuid format", func() {
 				Format(FormatUUID)
 			})
-			Attribute("vin", vin)
+			Attribute("vin", vin, func() {
+				Example("1HGCM82633A123456")
+			})
 			Attribute("color", String, "Car color")
 			Required("id", "vin", "color")
 		})
