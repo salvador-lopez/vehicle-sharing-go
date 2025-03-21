@@ -5,8 +5,8 @@ dbHost: "localhost"
 dbName: "inventory"
 dbOutboxTableRef: "outbox"
 dbPayloadColumnName: "payload"
-dbUser: "inventory"
-dbPassword: "inventory"
+dbUser: "root"
+dbPassword: "root"
 dbPort: "3308"
 
 redisDb: "inventory"
@@ -19,7 +19,7 @@ kafkaBrokers:
 
 kafkaTopics:
   -
-    name: "inventory-car"
+    name: "inventory-vehicles-car"
     numPartitions: 1
     replicationFactor: 1
     aggregateTypeRegexp: "Car"
