@@ -13,8 +13,8 @@ import (
 	httpmdlwr "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
 
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gen/car"
-	carsvr "vehicle-sharing-go/app/inventory/internal/vehicle/handler/gen/http/car/server"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
+	carsvr "vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/http/car/server"
 )
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
