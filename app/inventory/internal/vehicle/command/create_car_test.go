@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 	"time"
+	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -15,7 +16,7 @@ import (
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command/mock"
-	domain2 "vehicle-sharing-go/app/inventory/internal/vehicle/domain"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/model"
 
@@ -88,7 +89,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 
 	recordedEvents := []*eventpkg.Event{recordedEvent}
 
-	expectedCar := domain2.CarFromModel(&model.Car{
+	expectedCar := domain.CarFromModel(&model.Car{
 		VinNumber: validVinNumber,
 		Color:     color,
 		AggregateRoot: &modelpkg.AggregateRoot{
@@ -112,10 +113,11 @@ func (s *createCarUnitSuite) TestCreateCar() {
 	s.Require().NoError(err)
 }
 
-func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
+func (s *createCarUnitSuite) TestReturnErrInvalidVin() {
 	tests := []struct {
-		name string
-		vin  string
+		name     string
+		vin      string
+		errorMsg string
 	}{
 		{
 			name: "Less than 17 characters",
@@ -156,9 +158,9 @@ func (s *createCarUnitSuite) TestCreateCarReturnErrInvalidVin() {
 			s.SetupTest()
 			defer s.TearDownTest()
 
-			invalidVinErr := fmt.Errorf("%v: %s", domain2.ErrInvalidVin, tt.vin)
 			err := s.handleSut(uuid.New(), tt.vin)
-			s.Require().EqualError(err, invalidVinErr.Error())
+			s.Require().ErrorIs(err, pkgdomain.ErrConflict, "expected error to be classified as a conflict")
+			s.Require().EqualError(err, fmt.Sprintf("domain conflict: invalid vin provided: %s", tt.vin))
 		})
 	}
 }

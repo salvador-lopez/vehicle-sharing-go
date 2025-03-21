@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"vehicle-sharing-go/pkg/domain"
 )
 
 type VIN struct {
@@ -23,7 +24,7 @@ var ErrInvalidVin = errors.New("invalid vin provided")
 func guardVIN(number string) error {
 	matches, _ := regexp.Match("^[A-HJ-NPR-Z\\d]{8}[\\dX][A-HJ-NPR-Z\\d]{8}$", []byte(number))
 	if !matches {
-		return fmt.Errorf("%v: %s", ErrInvalidVin, number)
+		return domain.WrapConflict(fmt.Errorf("%v: %s", ErrInvalidVin, number))
 	}
 
 	return nil
