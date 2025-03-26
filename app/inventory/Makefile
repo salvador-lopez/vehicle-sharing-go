@@ -24,4 +24,4 @@ integration-test: mock-gen
 	@CGO_ENABLED=1 go test ./... -tags=integration -p 1 -race
 
 goa-gen-vehicle:
-	goa gen vehicle-sharing-go/app/inventory/internal/vehicle/handler/design -o internal/vehicle/handler/rest
+	goa gen vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/design -o internal/vehicle/handler/goa

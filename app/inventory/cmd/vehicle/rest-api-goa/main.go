@@ -13,15 +13,14 @@ import (
 	"syscall"
 	"time"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest"
 	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
 
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
-
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 	commandpkg "vehicle-sharing-go/pkg/domain/event"
 )
@@ -47,7 +46,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger. Replace logger with your own log package of choice.
-	logger := log.New(os.Stderr, "[inventory-vehicles-rest-api] ", log.Ltime)
+	logger := log.New(os.Stderr, "[inventory-vehicles-rest-api-goa] ", log.Ltime)
 
 	dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
 		UserName:     *dbUser,

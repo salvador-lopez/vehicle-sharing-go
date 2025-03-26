@@ -7,6 +7,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest/mock"
 	"vehicle-sharing-go/pkg/domain"
 
 	"github.com/golang/mock/gomock"
@@ -15,9 +17,7 @@ import (
 	goa "goa.design/goa/v3/pkg"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/mock"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 

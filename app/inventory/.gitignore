@@ -1,4 +1,4 @@
-internal/vehicle/handler/rest/gen
+internal/vehicle/handler/goa/gen
 
 cmd/vehicle/message-relay/cmd/message-relay.yaml
 cmd/vehicle/domain-event-consumer/cmd/consumer.yaml
