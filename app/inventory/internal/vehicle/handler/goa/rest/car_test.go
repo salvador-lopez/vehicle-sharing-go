@@ -7,6 +7,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+	rest2 "vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest"
+	mock2 "vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest/mock"
 	"vehicle-sharing-go/pkg/domain"
 
 	"github.com/golang/mock/gomock"
@@ -15,9 +17,7 @@ import (
 	goa "goa.design/goa/v3/pkg"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/gen/car"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/rest/mock"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 
@@ -25,19 +25,19 @@ type carUnitSuite struct {
 	suite.Suite
 	ctx                   context.Context
 	mockCtrl              *gomock.Controller
-	mockCreateCarCHandler *mock.MockCreateCarCommandHandler
-	mockCarQueryService   *mock.MockFindCarQueryService
-	sut                   *rest.CarHandler
+	mockCreateCarCHandler *mock2.MockCreateCarCommandHandler
+	mockCarQueryService   *mock2.MockFindCarQueryService
+	sut                   *rest2.CarHandler
 }
 
 func (s *carUnitSuite) SetupTest() {
 	s.ctx = context.Background()
 
 	s.mockCtrl = gomock.NewController(s.T())
-	s.mockCarQueryService = mock.NewMockFindCarQueryService(s.mockCtrl)
-	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
+	s.mockCarQueryService = mock2.NewMockFindCarQueryService(s.mockCtrl)
+	s.mockCreateCarCHandler = mock2.NewMockCreateCarCommandHandler(s.mockCtrl)
 
-	s.sut = rest.NewCarHandler(s.mockCreateCarCHandler, s.mockCarQueryService)
+	s.sut = rest2.NewCarHandler(s.mockCreateCarCHandler, s.mockCarQueryService)
 }
 
 func (s *carUnitSuite) TearDownTest() {
@@ -101,13 +101,13 @@ func (s *carUnitSuite) TestGet() {
 			name:        "Return internal goa.ServiceError when query service Find() return error",
 			carID:       uuid.New(),
 			querySvcErr: errors.New("query service Find() err"),
-			sutErrMsg:   rest.ErrInternal.Error(),
+			sutErrMsg:   rest2.ErrInternal.Error(),
 			goaErrName:  "internal",
 		},
 		{
 			name:       "Return notFound goa.ServiceError when query service Find() return nil projection",
 			carID:      uuid.New(),
-			sutErrMsg:  rest.ErrNotFound.Error(),
+			sutErrMsg:  rest2.ErrNotFound.Error(),
 			goaErrName: "notFound",
 		},
 	}
@@ -209,7 +209,7 @@ func (s *carUnitSuite) TestCreate() {
 			vinNumber:   "4Z1SL65848Z411440",
 			color:       "Black Bullet",
 			cHandlerErr: errors.New("command handler err"),
-			sutErr:      rest.ErrInternal,
+			sutErr:      rest2.ErrInternal,
 			goaErrName:  "internal",
 		},
 	}
