@@ -32,6 +32,11 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	carProjection, err := h.queryService.Find(ctx, carID)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	
 	if carProjection == nil {
 		http.Error(w, "not found", http.StatusNotFound)
 		return

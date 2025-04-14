@@ -5,6 +5,7 @@ package rest_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -141,6 +142,12 @@ func (s *carUnitSuite) TestGetErr() {
 			code:            http.StatusNotFound,
 			queryServiceErr: nil,
 			sutErrMsg:       "not found\n",
+		},
+		{
+			name:            "Query Service Error",
+			code:            http.StatusInternalServerError,
+			queryServiceErr: errors.New("queryService error"),
+			sutErrMsg:       "internal error\n",
 		},
 	}
 
