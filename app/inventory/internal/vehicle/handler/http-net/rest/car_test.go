@@ -138,10 +138,9 @@ func (s *carUnitSuite) TestGetErr() {
 		sutErrMsg       string
 	}{
 		{
-			name:            "Car Not Found Err",
-			code:            http.StatusNotFound,
-			queryServiceErr: nil,
-			sutErrMsg:       "not found\n",
+			name:      "Car Not Found Err",
+			code:      http.StatusNotFound,
+			sutErrMsg: "not found\n",
 		},
 		{
 			name:            "Query Service Error",
@@ -167,4 +166,16 @@ func (s *carUnitSuite) TestGetErr() {
 			s.Require().Equal(tt.sutErrMsg, rr.Body.String())
 		})
 	}
+
+	s.Run("Invalid Car ID provided in path", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+		req := httptest.NewRequest(http.MethodGet, "/cars/invalid-car-id", nil)
+		rr := httptest.NewRecorder()
+
+		s.sut.Get(s.ctx, rr, req)
+
+		s.Require().Equal(http.StatusBadRequest, rr.Code)
+		s.Require().Equal("invalid UUID\n", rr.Body.String())
+	})
 }

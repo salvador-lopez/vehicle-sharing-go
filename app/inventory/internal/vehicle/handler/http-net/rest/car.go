@@ -36,7 +36,7 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	if carProjection == nil {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -56,7 +56,7 @@ func (h *CarHandler) extractIdFromPath(path string) (uuid.UUID, error) {
 
 	matches := re.FindStringSubmatch(path)
 	if len(matches) != 2 {
-		return uuid.UUID{}, errors.New("invalid or missing UUID")
+		return uuid.UUID{}, errors.New("invalid UUID")
 	}
 
 	return uuid.Parse(matches[1])

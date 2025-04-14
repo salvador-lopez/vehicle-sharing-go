@@ -24,7 +24,8 @@ type CreateCarHandler struct {
 }
 
 func NewCreateCarHandler(
-	idGen func() uuid.UUID, now func() time.Time,
+	idGen func() uuid.UUID,
+	now func() time.Time,
 	cr CarRepository,
 	txSession TransactionalSession,
 	ep *event.AgRootEventPublisher,
