@@ -127,3 +127,37 @@ func (s *carUnitSuite) TestGetNoErr() {
 		})
 	}
 }
+
+func (s *carUnitSuite) TestGetErr() {
+	tests := []struct {
+		name            string
+		carID           uuid.UUID
+		code            int
+		queryServiceErr error
+		sutErrMsg       string
+	}{
+		{
+			name:            "Car Not Found Err",
+			code:            http.StatusNotFound,
+			queryServiceErr: nil,
+			sutErrMsg:       "not found\n",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			defer s.TearDownTest()
+
+			s.mockCarQueryService.EXPECT().Find(s.ctx, tt.carID).Return(nil, tt.queryServiceErr)
+
+			req := httptest.NewRequest(http.MethodGet, "/cars/"+tt.carID.String(), nil)
+			rr := httptest.NewRecorder()
+
+			s.sut.Get(s.ctx, rr, req)
+
+			s.Require().Equal(tt.code, rr.Code)
+			s.Require().Equal(tt.sutErrMsg, rr.Body.String())
+		})
+	}
+}

@@ -32,6 +32,10 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	carProjection, err := h.queryService.Find(ctx, carID)
+	if carProjection == nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
