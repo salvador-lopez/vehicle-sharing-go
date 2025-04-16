@@ -12,15 +12,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/goa"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest"
 	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
 
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 	commandpkg "vehicle-sharing-go/pkg/domain/event"
 )
@@ -29,9 +28,10 @@ func main() {
 	// Define command line flags, add any other flag required to configure the
 	// service.
 	var (
-		hostF     = flag.String("host", "localhost", "Server host (valid values: localhost)")
-		domainF   = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
-		httpPortF = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
+		serverLibrary = flag.String("server-library", "goa", "define which server library to use")
+		hostF         = flag.String("host", "localhost", "Server host (valid values: localhost)")
+		domainF       = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
+		httpPortF     = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
 
 		dbUser  = flag.String("db-user", "inventory", "database user")
 		dbPwd   = flag.String("db-password", "inventory", "database password")
@@ -85,13 +85,6 @@ func main() {
 
 	createCarHandler := command.NewCreateCarHandler(idGenFn, nowFn, carRepo, dbConn, aggRootEventPublisher)
 
-	// Initialize the http rest controllers.
-	carSvc := rest.NewCarHandler(createCarHandler, carQueryService)
-
-	// Wrap the services in endpoints that can be invoked from other services
-	// potentially running in different processes.
-	carEndpoints := car.NewEndpoints(carSvc)
-
 	// Create channel used by both the signal handler and server goroutines
 	// to notify the main goroutine when to stop the server.
 	errc := make(chan error)
@@ -131,7 +124,14 @@ func main() {
 			} else if u.Port() == "" {
 				u.Host = net.JoinHostPort(u.Host, "80")
 			}
-			handleHTTPServer(ctx, u, carEndpoints, &wg, errc, logger, *dbgF)
+
+			switch *serverLibrary {
+			case "http-net":
+				logger.Fatal("not implemented\n")
+			default:
+				goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+
+			}
 		}
 
 	default:
