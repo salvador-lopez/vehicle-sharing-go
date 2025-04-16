@@ -3,10 +3,8 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"github.com/google/uuid"
 	"net/http"
-	"regexp"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 
@@ -25,7 +23,7 @@ func NewCarHandler(qs FindCarQueryService) *CarHandler {
 
 func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
-	carID, err := h.extractIdFromPath(r.URL.Path)
+	carID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -49,15 +47,4 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func (h *CarHandler) extractIdFromPath(path string) (uuid.UUID, error) {
-	re := regexp.MustCompile(`^/cars/([a-f0-9-]+)$`)
-
-	matches := re.FindStringSubmatch(path)
-	if len(matches) != 2 {
-		return uuid.UUID{}, errors.New("invalid UUID")
-	}
-
-	return uuid.Parse(matches[1])
 }

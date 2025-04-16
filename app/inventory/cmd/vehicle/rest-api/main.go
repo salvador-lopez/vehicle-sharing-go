@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/goa"
+	nethttp "vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/net-http"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
 
@@ -45,8 +46,8 @@ func main() {
 	)
 	flag.Parse()
 
-	// Setup logger. Replace logger with your own log package of choice.
-	logger := log.New(os.Stderr, "[inventory-vehicles-rest-api-goa] ", log.Ltime)
+	// Setup logger.
+	logger := log.New(os.Stderr, fmt.Sprintf("[inventory-vehicles-rest-api-%s] ", *serverLibrary), log.Ltime)
 
 	dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
 		UserName:     *dbUser,
@@ -126,8 +127,8 @@ func main() {
 			}
 
 			switch *serverLibrary {
-			case "http-net":
-				logger.Fatal("not implemented\n")
+			case "net-http":
+				nethttp.HandleHTTPServer(ctx, u, carQueryService, &wg, errc, logger, *dbgF)
 			default:
 				goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 

@@ -30,7 +30,8 @@ func HandleHTTPServer(
 	wg *sync.WaitGroup,
 	errc chan error,
 	logger *log.Logger,
-	debug bool) {
+	debug bool,
+) {
 
 	// Setup goa log adapter.
 	var (

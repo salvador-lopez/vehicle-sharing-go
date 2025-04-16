@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/http-net/rest"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/http-net/rest/mock"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest/handler/mock"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -114,7 +114,8 @@ func (s *carUnitSuite) TestGetNoErr() {
 			}
 			s.mockCarQueryService.EXPECT().Find(s.ctx, tt.carID).Return(expectedProjection, nil)
 
-			req := httptest.NewRequest(http.MethodGet, "/cars/"+tt.carID.String(), nil)
+			req := httptest.NewRequest(http.MethodGet, "/cars/{id}", nil)
+			req.SetPathValue("id", tt.carID.String())
 			rr := httptest.NewRecorder()
 
 			s.sut.Get(s.ctx, rr, req)
@@ -157,7 +158,8 @@ func (s *carUnitSuite) TestGetErr() {
 
 			s.mockCarQueryService.EXPECT().Find(s.ctx, tt.carID).Return(nil, tt.queryServiceErr)
 
-			req := httptest.NewRequest(http.MethodGet, "/cars/"+tt.carID.String(), nil)
+			req := httptest.NewRequest(http.MethodGet, "/cars/{id}", nil)
+			req.SetPathValue("id", tt.carID.String())
 			rr := httptest.NewRecorder()
 
 			s.sut.Get(s.ctx, rr, req)
@@ -170,12 +172,13 @@ func (s *carUnitSuite) TestGetErr() {
 	s.Run("Invalid Car ID provided in path", func() {
 		s.SetupTest()
 		defer s.TearDownTest()
-		req := httptest.NewRequest(http.MethodGet, "/cars/invalid-car-id", nil)
+		req := httptest.NewRequest(http.MethodGet, "/cars/{id}", nil)
+		req.SetPathValue("id", "invalid-car-id")
 		rr := httptest.NewRecorder()
 
 		s.sut.Get(s.ctx, rr, req)
 
 		s.Require().Equal(http.StatusBadRequest, rr.Code)
-		s.Require().Equal("invalid UUID\n", rr.Body.String())
+		s.Require().Equal("invalid UUID length: 14\n", rr.Body.String())
 	})
 }
