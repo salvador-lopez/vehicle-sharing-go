@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="inventory vehicles rest-api-nethttp" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="rest-api-goa" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="inventory/vehicles">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="-server-library=net-http" />
+    <parameters value="run" />
     <kind value="PACKAGE" />
     <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api" />
     <directory value="$PROJECT_DIR$" />
