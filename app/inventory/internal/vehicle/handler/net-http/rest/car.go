@@ -3,10 +3,12 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"net/http"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
+	"vehicle-sharing-go/pkg/domain"
 )
 
 //go:generate mockgen -destination=mock/create_car_command_handler_mock.go -package=mock . CreateCarCommandHandler
@@ -83,6 +85,16 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 		return
 	}
 
-	_ = h.commandHandler.Handle(ctx, &createCarCommand)
+	err = h.commandHandler.Handle(ctx, &createCarCommand)
+	if err != nil {
+		if errors.Is(err, domain.ErrConflict) {
+			w.WriteHeader(http.StatusConflict)
+			_ = json.NewEncoder(w).Encode(newDomainConflict(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(newInternalError())
+	}
 	w.WriteHeader(http.StatusOK)
 }

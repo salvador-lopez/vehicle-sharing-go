@@ -20,3 +20,7 @@ func newBadRequest(err error) *errorResponse {
 func newNotFound(id uuid.UUID) *errorResponse {
 	return &errorResponse{Error: fmt.Sprintf("not found: %v", id)}
 }
+
+func newDomainConflict(err error) *errorResponse {
+	return &errorResponse{Error: err.Error()}
+}

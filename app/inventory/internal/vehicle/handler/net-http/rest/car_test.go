@@ -18,6 +18,7 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest/mock"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
+	"vehicle-sharing-go/pkg/domain"
 )
 
 type carUnitSuite struct {
@@ -207,6 +208,24 @@ func (s *carUnitSuite) TestCreate() {
 			vinNumber: "4Y1SL65848Z411439",
 			color:     "Spectral Blue",
 			code:      http.StatusOK,
+		},
+		{
+			name:         "Domain conflict 409 response",
+			carID:        uuid.NewString(),
+			vinNumber:    "4Z1SL65848Z411440",
+			color:        "Wolf Gray",
+			cHandlerErr:  domain.WrapErrConflict(errors.New("chandler domain conflict err")),
+			code:         http.StatusConflict,
+			responseBody: "{\"error\":\"domain conflict: chandler domain conflict err\"}\n",
+		},
+		{
+			name:         "Internal server error response 500",
+			carID:        uuid.NewString(),
+			vinNumber:    "4Z1SL65848Z411440",
+			color:        "Red Storm",
+			cHandlerErr:  errors.New("command handler err"),
+			code:         http.StatusInternalServerError,
+			responseBody: "{\"error\":\"internal error\"}\n",
 		},
 	}
 
