@@ -11,11 +11,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/suite"
 
-	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
-
-	gormpkg "vehicle-sharing-go/pkg/database/gorm"
-	modelpkg "vehicle-sharing-go/pkg/database/gorm/model"
-	eventpkg "vehicle-sharing-go/pkg/domain/event"
+	"vehicle-sharing-go/pkg/database/gorm"
+	"vehicle-sharing-go/pkg/database/gorm/model"
+	"vehicle-sharing-go/pkg/domain/event"
 )
 
 type outboxRepoIntegrationSuite struct {
@@ -23,22 +21,22 @@ type outboxRepoIntegrationSuite struct {
 	evtID      uuid.UUID
 	appID      string
 	kafkaTopic string
-	sut        *gormpkg.OutboxRepository
+	sut        *gorm.OutboxRepository
 }
 
 func (s *outboxRepoIntegrationSuite) SetupSuite() {
 	s.DatabaseSuite.SetupSuite()
 	s.initDb()
 	s.evtID = uuid.New()
-	s.sut = gormpkg.NewOutboxRepository(s.Conn())
+	s.sut = gorm.NewOutboxRepository(s.Conn())
 }
 
 func (s *outboxRepoIntegrationSuite) initDb() {
-	s.Require().NoError(s.Conn().Db().AutoMigrate(&modelpkg.OutboxRecord{}))
+	s.Require().NoError(s.Conn().Db().AutoMigrate(&model.OutboxRecord{}))
 }
 
 func (s *outboxRepoIntegrationSuite) TearDownTest() {
-	s.Conn().Db().Delete(&modelpkg.OutboxRecord{}, s.evtID)
+	s.Conn().Db().Delete(&model.OutboxRecord{}, s.evtID)
 	s.DatabaseSuite.TearDownTest()
 }
 
@@ -49,14 +47,14 @@ func TestOutboxRepoIntegrationSuite(t *testing.T) {
 func (s *outboxRepoIntegrationSuite) TestPublish() {
 	now := time.Now()
 
-	var events []*eventpkg.Event
-	evtPayload := &event.CarCreatedPayload{
+	var events []*event.Event
+	evtPayload := &CarCreatedPayload{
 		VinNumber: "4Y1SL65848Z411439",
 		Color:     "Spectral Blue",
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	carCreatedEvent := &eventpkg.Event{
+	carCreatedEvent := &event.Event{
 		ID:            s.evtID,
 		AggregateID:   uuid.New(),
 		AggregateType: "Car",
@@ -67,7 +65,7 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	events = append(events, carCreatedEvent)
 	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
 
-	var outboxRecordStored *modelpkg.OutboxRecord
+	var outboxRecordStored *model.OutboxRecord
 	s.Conn().Db().First(&outboxRecordStored, s.evtID)
 	s.Require().NotNil(outboxRecordStored)
 
@@ -75,7 +73,7 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	s.Require().Equal(carCreatedEvent.AggregateType, outboxRecordStored.AggregateType)
 	s.Require().Equal(carCreatedEvent.EventType, outboxRecordStored.EventType)
 
-	var evtPayloadFound *event.CarCreatedPayload
+	var evtPayloadFound *CarCreatedPayload
 	s.Require().NoError(decode(outboxRecordStored.Payload, &evtPayloadFound))
 
 	s.Require().Equal(evtPayload.Color, evtPayloadFound.Color)
@@ -123,4 +121,11 @@ func decode(input any, result interface{}) error {
 		return err
 	}
 	return err
+}
+
+type CarCreatedPayload struct {
+	VinNumber string `gorm:"type:varchar(255);unique"`
+	Color     string `gorm:"type:varchar(255)"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
