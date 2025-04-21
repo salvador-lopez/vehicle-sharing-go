@@ -74,6 +74,18 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 }
 
+// Create godoc
+// @Summary      Create a new car
+// @Description  Creates a new car record
+// @Tags         car
+// @Accept       json
+// @Produce      json
+// @Param        car  body      command.CreateCar  true  "Create Car Body Params"
+// @Success      200  {string}  string              "OK"
+// @Failure      400  {object}  errorResponse       "bad request"
+// @Failure      409  {object}  errorResponse       "conflict"
+// @Failure      500  {object}  errorResponse       "internal error"
+// @Router       /cars [post]
 func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
