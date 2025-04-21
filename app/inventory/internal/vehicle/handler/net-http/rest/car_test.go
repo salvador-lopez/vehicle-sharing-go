@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest/handler/mock"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest/mock"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -133,21 +133,23 @@ func (s *carUnitSuite) TestGetNoErr() {
 func (s *carUnitSuite) TestGetErr() {
 	tests := []struct {
 		name            string
-		carID           uuid.UUID
+		carID           string
 		code            int
 		queryServiceErr error
 		sutErrMsg       string
 	}{
 		{
 			name:      "Car Not Found Err",
+			carID:     "b1e3580a-acd5-4081-9d2c-74366a580f36",
 			code:      http.StatusNotFound,
-			sutErrMsg: "not found\n",
+			sutErrMsg: "{\"error\":\"not found: b1e3580a-acd5-4081-9d2c-74366a580f36\"}\n",
 		},
 		{
 			name:            "Query Service Error",
+			carID: 			 "2279e813-d3ec-4be4-9c41-02315873fc34",
 			code:            http.StatusInternalServerError,
 			queryServiceErr: errors.New("queryService error"),
-			sutErrMsg:       "internal error\n",
+			sutErrMsg:       "{\"error\":\"internal error\"}\n",
 		},
 	}
 
@@ -156,10 +158,13 @@ func (s *carUnitSuite) TestGetErr() {
 			s.SetupTest()
 			defer s.TearDownTest()
 
-			s.mockCarQueryService.EXPECT().Find(s.ctx, tt.carID).Return(nil, tt.queryServiceErr)
+			carID, err := uuid.Parse(tt.carID)
+			s.Require().NoError(err)
+
+			s.mockCarQueryService.EXPECT().Find(s.ctx, carID).Return(nil, tt.queryServiceErr)
 
 			req := httptest.NewRequest(http.MethodGet, "/cars/{id}", nil)
-			req.SetPathValue("id", tt.carID.String())
+			req.SetPathValue("id", carID.String())
 			rr := httptest.NewRecorder()
 
 			s.sut.Get(s.ctx, rr, req)
@@ -179,6 +184,6 @@ func (s *carUnitSuite) TestGetErr() {
 		s.sut.Get(s.ctx, rr, req)
 
 		s.Require().Equal(http.StatusBadRequest, rr.Code)
-		s.Require().Equal("invalid UUID length: 14\n", rr.Body.String())
+		s.Require().Equal(  "{\"error\":\"bad request: invalid UUID length: 14\"}\n", rr.Body.String())
 	})
 }
