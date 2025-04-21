@@ -236,4 +236,28 @@ func (s *carUnitSuite) TestCreate() {
 			s.Require().Equal(tt.responseBody, rr.Body.String())
 		})
 	}
+
+	s.Run("Invalid Request Body param (id is not an UUID)", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+
+		type invalidReqBody struct {
+			ID    int   `json:"id"`
+			VIN   string `json:"vin"`
+			Color string `json:"color"`
+		}
+
+		reqBody := invalidReqBody{ID: 27, VIN: "4Z1SL65848Z411440", Color: "Spectral Blue Portimao"}
+		jsonReqBody, err := json.Marshal(reqBody)
+		s.Require().NoError(err)
+		req := httptest.NewRequest(http.MethodPost, "/cars", bytes.NewReader(jsonReqBody))
+		rr := httptest.NewRecorder()
+		s.sut.Create(s.ctx, rr, req)
+
+		s.Require().Equal(http.StatusBadRequest, rr.Code)
+		s.Require().Equal(
+			"{\"error\":\"bad request: json: cannot unmarshal number into Go struct field CreateCar.id of type uuid.UUID\"}\n",
+			rr.Body.String(),
+		)
+	})
 }

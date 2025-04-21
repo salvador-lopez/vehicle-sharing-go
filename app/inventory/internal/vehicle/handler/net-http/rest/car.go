@@ -76,7 +76,13 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 
 	var createCarCommand command.CreateCar
-	_ = json.NewDecoder(r.Body).Decode(&createCarCommand)
+	err := json.NewDecoder(r.Body).Decode(&createCarCommand)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(newBadRequest(err))
+		return
+	}
+
 	_ = h.commandHandler.Handle(ctx, &createCarCommand)
 	w.WriteHeader(http.StatusOK)
 }
