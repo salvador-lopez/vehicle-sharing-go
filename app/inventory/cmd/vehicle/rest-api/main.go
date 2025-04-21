@@ -127,11 +127,10 @@ func main() {
 			}
 
 			switch *serverLibrary {
-			case "net-http":
-				nethttp.HandleHTTPServer(ctx, u, carQueryService, &wg, errc, logger, *dbgF)
-			default:
-				goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
-
+				case "net-http":
+					nethttp.HandleHTTPServer(ctx, u, carQueryService, &wg, errc, logger, *dbgF)
+				default:
+					goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 			}
 		}
 
