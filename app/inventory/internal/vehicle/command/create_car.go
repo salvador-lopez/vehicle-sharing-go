@@ -10,9 +10,9 @@ import (
 )
 
 type CreateCar struct {
-	ID    uuid.UUID
-	VIN   string
-	Color string
+	ID    uuid.UUID `json:"id"`
+	VIN   string    `json:"vin"`
+	Color string    `json:"color"`
 }
 
 type CreateCarHandler struct {

@@ -3,37 +3,40 @@
 package rest_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest/mock"
-
-	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/suite"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 
 type carUnitSuite struct {
 	suite.Suite
-	ctx                 context.Context
-	mockCtrl            *gomock.Controller
-	mockCarQueryService *mock.MockFindCarQueryService
-	sut                 *rest.CarHandler
+	ctx                   context.Context
+	mockCtrl              *gomock.Controller
+	mockCreateCarCHandler *mock.MockCreateCarCommandHandler
+	mockCarQueryService   *mock.MockFindCarQueryService
+	sut                   *rest.CarHandler
 }
 
 func (s *carUnitSuite) SetupTest() {
 	s.ctx = context.Background()
 
 	s.mockCtrl = gomock.NewController(s.T())
+	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
 	s.mockCarQueryService = mock.NewMockFindCarQueryService(s.mockCtrl)
 
-	s.sut = rest.NewCarHandler(s.mockCarQueryService)
+	s.sut = rest.NewCarHandler(s.mockCreateCarCHandler, s.mockCarQueryService)
 }
 
 func (s *carUnitSuite) TearDownTest() {
@@ -146,7 +149,7 @@ func (s *carUnitSuite) TestGetErr() {
 		},
 		{
 			name:            "Query Service Error",
-			carID: 			 "2279e813-d3ec-4be4-9c41-02315873fc34",
+			carID:           "2279e813-d3ec-4be4-9c41-02315873fc34",
 			code:            http.StatusInternalServerError,
 			queryServiceErr: errors.New("queryService error"),
 			sutErrMsg:       "{\"error\":\"internal error\"}\n",
@@ -184,6 +187,53 @@ func (s *carUnitSuite) TestGetErr() {
 		s.sut.Get(s.ctx, rr, req)
 
 		s.Require().Equal(http.StatusBadRequest, rr.Code)
-		s.Require().Equal(  "{\"error\":\"bad request: invalid UUID length: 14\"}\n", rr.Body.String())
+		s.Require().Equal("{\"error\":\"bad request: invalid UUID length: 14\"}\n", rr.Body.String())
 	})
+}
+
+func (s *carUnitSuite) TestCreate() {
+	tests := []struct {
+		name         string
+		carID        string
+		vinNumber    string
+		color        string
+		cHandlerErr  error
+		code         int
+		responseBody string
+	}{
+		{
+			name:      "Created with no error",
+			carID:     uuid.NewString(),
+			vinNumber: "4Y1SL65848Z411439",
+			color:     "Spectral Blue",
+			code:      http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			defer s.TearDownTest()
+
+			carID, err := uuid.Parse(tt.carID)
+			s.Require().NoError(err)
+
+			cmd := &command.CreateCar{
+				VIN:   tt.vinNumber,
+				ID:    carID,
+				Color: tt.color,
+			}
+			s.mockCreateCarCHandler.EXPECT().Handle(s.ctx, cmd).Return(tt.cHandlerErr)
+
+			reqBody := &command.CreateCar{ID: carID, VIN: tt.vinNumber, Color: tt.color}
+			jsonReqBody, err := json.Marshal(reqBody)
+			s.Require().NoError(err)
+			req := httptest.NewRequest(http.MethodPost, "/cars", bytes.NewReader(jsonReqBody))
+			rr := httptest.NewRecorder()
+			s.sut.Create(s.ctx, rr, req)
+
+			s.Require().Equal(tt.code, rr.Code)
+			s.Require().Equal(tt.responseBody, rr.Body.String())
+		})
+	}
 }

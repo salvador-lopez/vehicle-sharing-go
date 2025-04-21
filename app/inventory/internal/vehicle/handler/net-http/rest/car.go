@@ -5,8 +5,14 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"net/http"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
+
+//go:generate mockgen -destination=mock/create_car_command_handler_mock.go -package=mock . CreateCarCommandHandler
+type CreateCarCommandHandler interface {
+	Handle(ctx context.Context, cmd *command.CreateCar) error
+}
 
 //go:generate mockgen -destination=mock/find_car_query_service_mock.go -package=mock . FindCarQueryService
 type FindCarQueryService interface {
@@ -14,11 +20,12 @@ type FindCarQueryService interface {
 }
 
 type CarHandler struct {
-	queryService FindCarQueryService
+	commandHandler CreateCarCommandHandler
+	queryService   FindCarQueryService
 }
 
-func NewCarHandler(qs FindCarQueryService) *CarHandler {
-	return &CarHandler{queryService: qs}
+func NewCarHandler(ch CreateCarCommandHandler, qs FindCarQueryService) *CarHandler {
+	return &CarHandler{commandHandler: ch, queryService: qs}
 }
 
 // Get godoc
@@ -63,4 +70,13 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 		_ = json.NewEncoder(w).Encode(newInternalError())
 		return
 	}
+}
+
+func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var createCarCommand command.CreateCar
+	_ = json.NewDecoder(r.Body).Decode(&createCarCommand)
+	_ = h.commandHandler.Handle(ctx, &createCarCommand)
+	w.WriteHeader(http.StatusOK)
 }
