@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sync"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/net-http/rest"
 )
@@ -31,6 +32,7 @@ func HandleHTTPServer(
 	ctx context.Context,
 	addr *url.URL,
 	carQueryService *gorm.CarProjectionRepository,
+	createCarCommandHandler *command.CreateCarHandler,
 	wg *sync.WaitGroup,
 	errc chan<- error,
 	logger *log.Logger,
@@ -38,7 +40,7 @@ func HandleHTTPServer(
 ) {
 	mux := http.NewServeMux()
 
-	carHandler := rest.NewCarHandler(carQueryService)
+	carHandler := rest.NewCarHandler(createCarCommandHandler, carQueryService)
 	registerHandlers(ctx, mux, carHandler, logger)
 
 	server := &http.Server{
@@ -64,7 +66,7 @@ func HandleHTTPServer(
 		err := server.Shutdown(shutdownCtx)
 		if err != nil {
 			logger.Println("error shutting down net-http server.")
-			return 
+			return
 		}
 		logger.Println("net-http server shutdown gracefully.")
 	}()
