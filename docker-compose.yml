@@ -3,7 +3,7 @@ services:
     image: mysql:8.2
     volumes:
       - inventory-db-data:/var/lib/mysql
-      - ./app/inventory/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - /app/inventory/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: root

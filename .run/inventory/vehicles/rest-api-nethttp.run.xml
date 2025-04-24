@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="inventory vehicles domain event consumer" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="rest-api-nethttp" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="inventory/vehicles">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="start" />
+    <parameters value="-server-library=net-http" />
     <kind value="PACKAGE" />
-    <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/domain-event-consumer" />
+    <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <method v="2" />

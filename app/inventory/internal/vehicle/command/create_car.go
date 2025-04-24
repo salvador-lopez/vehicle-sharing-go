@@ -10,9 +10,9 @@ import (
 )
 
 type CreateCar struct {
-	ID    uuid.UUID
-	VIN   string
-	Color string
+	ID    uuid.UUID `json:"id"`
+	VIN   string    `json:"vin"`
+	Color string    `json:"color"`
 }
 
 type CreateCarHandler struct {
@@ -24,7 +24,8 @@ type CreateCarHandler struct {
 }
 
 func NewCreateCarHandler(
-	idGen func() uuid.UUID, now func() time.Time,
+	idGen func() uuid.UUID,
+	now func() time.Time,
 	cr CarRepository,
 	txSession TransactionalSession,
 	ep *event.AgRootEventPublisher,

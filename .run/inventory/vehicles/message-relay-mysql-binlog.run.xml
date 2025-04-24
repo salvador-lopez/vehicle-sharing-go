@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="inventory vehicles message-relay" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="message-relay-mysql-binlog" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="inventory/vehicles">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="run" />

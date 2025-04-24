@@ -20,24 +20,24 @@ type VINDecoder interface {
 }
 
 type Car struct {
-	ID        uuid.UUID `gorm:"<-:create;type:varchar(36)"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID `gorm:"<-:create;type:varchar(36)" json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	*VINData
-	Color string `gorm:"type:varchar(255)"`
+	Color string `gorm:"type:varchar(255)" json:"color"`
 }
 
 type VINData struct {
-	VIN           string  `gorm:"type:varchar(255);unique"`
-	Country       *string `gorm:"type:varchar(255)"`
-	Manufacturer  *string `gorm:"type:varchar(255)"`
-	Brand         *string `gorm:"type:varchar(255)"`
-	EngineSize    *string `gorm:"type:varchar(255)"`
-	FuelType      *string `gorm:"type:varchar(255)"`
-	Model         *string `gorm:"type:varchar(255)"`
-	Year          *string `gorm:"type:varchar(255)"`
-	AssemblyPlant *string `gorm:"type:varchar(255)"`
-	SN            *string `gorm:"type:varchar(255)"`
+	VIN           string  `gorm:"type:varchar(255);unique" json:"vin"`
+	Country       *string `gorm:"type:varchar(255)" json:"country"`
+	Manufacturer  *string `gorm:"type:varchar(255)" json:"manufacturer"`
+	Brand         *string `gorm:"type:varchar(255)" json:"brand"`
+	EngineSize    *string `gorm:"type:varchar(255)" json:"engineSize"`
+	FuelType      *string `gorm:"type:varchar(255)" json:"fuelType"`
+	Model         *string `gorm:"type:varchar(255)" json:"model"`
+	Year          *string `gorm:"type:varchar(255)" json:"year"`
+	AssemblyPlant *string `gorm:"type:varchar(255)" json:"assemblyPlant"`
+	SN            *string `gorm:"type:varchar(255)" json:"sn"`
 }
 
 type CarProjector struct {

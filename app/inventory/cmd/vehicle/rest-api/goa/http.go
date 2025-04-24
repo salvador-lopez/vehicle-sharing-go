@@ -1,4 +1,4 @@
-package main
+package goa
 
 import (
 	"context"
@@ -8,18 +8,30 @@ import (
 	"os"
 	"sync"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/rest"
 
 	goahttp "goa.design/goa/v3/http"
 	httpmdlwr "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
 
-	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/car"
 	carsvr "vehicle-sharing-go/app/inventory/internal/vehicle/handler/goa/gen/http/car/server"
 )
 
-// handleHTTPServer starts configures and starts a HTTP server on the given
+// HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, carEndpoints *car.Endpoints, wg *sync.WaitGroup, errc chan error, logger *log.Logger, debug bool) {
+func HandleHTTPServer(
+	ctx context.Context,
+	u *url.URL,
+	carQueryService *gorm.CarProjectionRepository,
+	createCarHandler *command.CreateCarHandler,
+	wg *sync.WaitGroup,
+	errc chan error,
+	logger *log.Logger,
+	debug bool,
+) {
 
 	// Setup goa log adapter.
 	var (
@@ -54,7 +66,11 @@ func handleHTTPServer(ctx context.Context, u *url.URL, carEndpoints *car.Endpoin
 	)
 	{
 		eh := errorHandler(logger)
-		carServer = carsvr.New(carEndpoints, mux, dec, enc, eh, nil)
+
+		// Initialize the http rest controllers.
+		carSvc := rest.NewCarHandler(createCarHandler, carQueryService)
+
+		carServer = carsvr.New(car.NewEndpoints(carSvc), mux, dec, enc, eh, nil)
 		if debug {
 			servers := goahttp.Servers{
 				carServer,
