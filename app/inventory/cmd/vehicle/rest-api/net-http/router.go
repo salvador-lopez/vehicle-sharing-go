@@ -14,8 +14,15 @@ func registerHandlers(
 	carHandler *rest.CarHandler,
 	logger *log.Logger, // Pass logger as a parameter
 ) {
+	mux.Handle("/api/inventory/vehicles/cars", middleware.LogRequest(logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			carHandler.Create(ctx, w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})))
 
-	// Wrap the car handler with the logging middleware and pass the logger
 	mux.Handle("/api/inventory/vehicles/cars/{id}", middleware.LogRequest(logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
