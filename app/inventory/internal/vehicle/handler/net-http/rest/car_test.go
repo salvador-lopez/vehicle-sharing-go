@@ -207,7 +207,7 @@ func (s *carUnitSuite) TestCreate() {
 			carID:     uuid.NewString(),
 			vinNumber: "4Y1SL65848Z411439",
 			color:     "Spectral Blue",
-			code:      http.StatusOK,
+			code:      http.StatusCreated,
 		},
 		{
 			name:         "Domain conflict 409 response",
@@ -261,7 +261,7 @@ func (s *carUnitSuite) TestCreate() {
 		defer s.TearDownTest()
 
 		type invalidReqBody struct {
-			ID    int   `json:"id"`
+			ID    int    `json:"id"`
 			VIN   string `json:"vin"`
 			Color string `json:"color"`
 		}

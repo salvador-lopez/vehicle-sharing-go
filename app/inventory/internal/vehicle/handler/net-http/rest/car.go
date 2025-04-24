@@ -37,9 +37,9 @@ func NewCarHandler(ch CreateCarCommandHandler, qs FindCarQueryService) *CarHandl
 // @Produce      json
 // @Param        id   path      string  true  "Car UUID"
 // @Success      200  {object}  projection.Car
-// @Failure      400  {object}  errorResponse  "bad request"
-// @Failure      404  {object}  errorResponse  "not found"
-// @Failure      500  {object}  errorResponse  "internal error"
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
 // @Router       /cars/{id} [get]
 func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
@@ -80,11 +80,11 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 // @Tags         car
 // @Accept       json
 // @Produce      json
-// @Param        car  body      command.CreateCar  true  "Create Car Body Params"
-// @Success      200  {string}  string              "OK"
-// @Failure      400  {object}  errorResponse       "bad request"
-// @Failure      409  {object}  errorResponse       "conflict"
-// @Failure      500  {object}  errorResponse       "internal error"
+// @Param        car  body      command.CreateCar true  "Create Car Body Params"
+// @Success      201  {string}  string            "Created"
+// @Failure      400  {object}  ErrorResponse
+// @Failure      409  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
 // @Router       /cars [post]
 func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -108,5 +108,5 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(newInternalError())
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
