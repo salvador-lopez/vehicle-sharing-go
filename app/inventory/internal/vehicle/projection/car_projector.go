@@ -24,7 +24,7 @@ type Car struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	*VINData
-	Color string `gorm:"type:varchar(255)"`
+	Color string `gorm:"type:varchar(255)" json:"color"`
 }
 
 type VINData struct {
