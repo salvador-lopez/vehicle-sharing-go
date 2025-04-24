@@ -26,7 +26,7 @@ import (
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @servers.url   "http://localhost:8088/api/inventory/vehicles"
+// @servers.url   http://localhost:8088/api/inventory/vehicles
 
 func HandleHTTPServer(
 	ctx context.Context,
