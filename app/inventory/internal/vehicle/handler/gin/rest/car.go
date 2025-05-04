@@ -22,8 +22,22 @@ func NewCarHandler(qs FindCarQueryService) *CarHandler {
 }
 
 func (h *CarHandler) Get(c *gin.Context) {
-	carID := uuid.MustParse(c.Param("id"))
-	carProjection, _ := h.queryService.Find(c, carID)
+	carID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, newBadRequest(err))
+
+		return
+	}
+	carProjection, err := h.queryService.Find(c, carID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, newInternalError())
+		return
+	}
+
+	if carProjection == nil {
+		c.JSON(http.StatusNotFound, newNotFound(carID))
+		return
+	}
 
 	c.JSON(http.StatusOK, carProjection)
 }

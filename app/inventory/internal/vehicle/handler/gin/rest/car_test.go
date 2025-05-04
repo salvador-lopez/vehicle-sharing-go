@@ -4,6 +4,7 @@ package rest_test
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -127,4 +128,63 @@ func (s *carUnitSuite) TestGetNoErr() {
 			s.Require().Equal(expectedProjection, &actualProjection)
 		})
 	}
+}
+
+func (s *carUnitSuite) TestGetErr() {
+	tests := []struct {
+		name            string
+		carID           string
+		code            int
+		queryServiceErr error
+		sutErrMsg       string
+	}{
+		{
+			name:      "Car Not Found Err",
+			carID:     "b1e3580a-acd5-4081-9d2c-74366a580f36",
+			code:      http.StatusNotFound,
+			sutErrMsg: "{\"error\":\"not found: b1e3580a-acd5-4081-9d2c-74366a580f36\"}",
+		},
+		{
+			name:            "Query Service Error",
+			carID:           "2279e813-d3ec-4be4-9c41-02315873fc34",
+			code:            http.StatusInternalServerError,
+			queryServiceErr: errors.New("queryService error"),
+			sutErrMsg:       "{\"error\":\"internal error\"}",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			defer s.TearDownTest()
+
+			carID, err := uuid.Parse(tt.carID)
+			s.Require().NoError(err)
+
+			s.mockCarQueryService.EXPECT().Find(s.c, carID).Return(nil, tt.queryServiceErr)
+
+			req := httptest.NewRequest(http.MethodGet, "/i-dont-care-about-the-endpoint", nil)
+			s.c.Request = req
+			s.c.AddParam("id", tt.carID)
+
+			s.sut.Get(s.c)
+
+			s.Require().Equal(tt.code, s.rr.Code)
+			s.Require().Equal(tt.sutErrMsg, s.rr.Body.String())
+		})
+	}
+
+	s.Run("Invalid Car ID provided in path", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+
+		req := httptest.NewRequest(http.MethodGet, "/i-dont-care-about-the-endpoint", nil)
+		s.c.Request = req
+		s.c.AddParam("id", "invalid-car-id")
+
+		s.sut.Get(s.c)
+
+		s.Require().Equal(http.StatusBadRequest, s.rr.Code)
+		s.Require().Equal("{\"error\":\"bad request: invalid UUID length: 14\"}", s.rr.Body.String())
+	})
 }
