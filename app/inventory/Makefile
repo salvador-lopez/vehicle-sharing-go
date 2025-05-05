@@ -35,8 +35,8 @@ goa-gen-vehicle:
 
 swaggo-gen-vehicle:
 	swag init \
-	  -g http.go \
-	  -d cmd/vehicle/rest-api/net-http,internal/vehicle/handler/net-http/rest \
-	  -o internal/vehicle/handler/net-http/docs \
-	  --parseDependency \
-	  --v3.1 true
+		-g api_docs.go \
+	  	-d internal/vehicle/handler/swago-annotations,internal/vehicle/projection,internal/vehicle/command,../../pkg/handler/rest \
+	  	-o internal/vehicle/handler/swago-annotations/docs \
+	  	--parseDependency \
+	  	--v3.1 true
