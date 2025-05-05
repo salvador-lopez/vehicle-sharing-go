@@ -244,8 +244,7 @@ func (s *carUnitSuite) TestCreate() {
 			}
 			s.mockCreateCarCHandler.EXPECT().Handle(s.ctx, cmd).Return(tt.cHandlerErr)
 
-			reqBody := &command.CreateCar{ID: carID, VIN: tt.vinNumber, Color: tt.color}
-			jsonReqBody, err := json.Marshal(reqBody)
+			jsonReqBody, err := json.Marshal(cmd)
 			s.Require().NoError(err)
 			req := httptest.NewRequest(http.MethodPost, "/cars", bytes.NewReader(jsonReqBody))
 			rr := httptest.NewRecorder()

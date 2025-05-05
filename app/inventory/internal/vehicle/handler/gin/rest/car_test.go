@@ -3,6 +3,7 @@
 package rest_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -13,18 +14,21 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gin/rest"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gin/rest/mock"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
+	"vehicle-sharing-go/pkg/domain"
 )
 
 type carUnitSuite struct {
 	suite.Suite
-	rr                  *httptest.ResponseRecorder
-	c                   *gin.Context
-	mockCtrl            *gomock.Controller
-	mockCarQueryService *mock.MockFindCarQueryService
-	sut                 *rest.CarHandler
+	rr                    *httptest.ResponseRecorder
+	c                     *gin.Context
+	mockCtrl              *gomock.Controller
+	mockCreateCarCHandler *mock.MockCreateCarCommandHandler
+	mockCarQueryService   *mock.MockFindCarQueryService
+	sut                   *rest.CarHandler
 }
 
 func (s *carUnitSuite) SetupSuite() {
@@ -36,8 +40,9 @@ func (s *carUnitSuite) SetupTest() {
 	c, _ := gin.CreateTestContext(s.rr)
 	s.c = c
 	s.mockCtrl = gomock.NewController(s.T())
+	s.mockCreateCarCHandler = mock.NewMockCreateCarCommandHandler(s.mockCtrl)
 	s.mockCarQueryService = mock.NewMockFindCarQueryService(s.mockCtrl)
-	s.sut = rest.NewCarHandler(s.mockCarQueryService)
+	s.sut = rest.NewCarHandler(s.mockCreateCarCHandler, s.mockCarQueryService)
 }
 
 func (s *carUnitSuite) TearDownTest() {
@@ -118,8 +123,7 @@ func (s *carUnitSuite) TestGetNoErr() {
 			}
 			s.mockCarQueryService.EXPECT().Find(s.c, tt.carID).Return(expectedProjection, nil)
 
-			req := httptest.NewRequest(http.MethodGet, "/i-dont-care-about-the-endpoint", nil)
-			s.c.Request = req
+			s.c.Request = s.getCarReq()
 			s.c.AddParam("id", tt.carID.String())
 
 			s.sut.Get(s.c)
@@ -167,8 +171,7 @@ func (s *carUnitSuite) TestGetErr() {
 
 			s.mockCarQueryService.EXPECT().Find(s.c, carID).Return(nil, tt.queryServiceErr)
 
-			req := httptest.NewRequest(http.MethodGet, "/i-dont-care-about-the-endpoint", nil)
-			s.c.Request = req
+			s.c.Request = s.getCarReq()
 			s.c.AddParam("id", tt.carID)
 
 			s.sut.Get(s.c)
@@ -191,4 +194,98 @@ func (s *carUnitSuite) TestGetErr() {
 		s.Require().Equal(http.StatusBadRequest, s.rr.Code)
 		s.Require().Equal("{\"error\":\"bad request: invalid UUID length: 14\"}", s.rr.Body.String())
 	})
+}
+
+func (s *carUnitSuite) TestCreate() {
+	tests := []struct {
+		name         string
+		carID        string
+		vinNumber    string
+		color        string
+		cHandlerErr  error
+		code         int
+		responseBody string
+	}{
+		{
+			name:      "Created with no error",
+			carID:     uuid.NewString(),
+			vinNumber: "4Y1SL65848Z411439",
+			color:     "Spectral Blue",
+			code:      http.StatusCreated,
+		},
+		{
+			name:         "Domain conflict 409 response",
+			carID:        uuid.NewString(),
+			vinNumber:    "4Z1SL65848Z411440",
+			color:        "Wolf Gray",
+			cHandlerErr:  domain.WrapErrConflict(errors.New("chandler domain conflict err")),
+			code:         http.StatusConflict,
+			responseBody: "{\"error\":\"domain conflict: chandler domain conflict err\"}",
+		},
+		{
+			name:         "Internal server error response 500",
+			carID:        uuid.NewString(),
+			vinNumber:    "4Z1SL65848Z411440",
+			color:        "Red Storm",
+			cHandlerErr:  errors.New("command handler err"),
+			code:         http.StatusInternalServerError,
+			responseBody: "{\"error\":\"internal error\"}",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			defer s.TearDownTest()
+
+			carID, err := uuid.Parse(tt.carID)
+			s.Require().NoError(err)
+
+			cmd := &command.CreateCar{
+				VIN:   tt.vinNumber,
+				ID:    carID,
+				Color: tt.color,
+			}
+			s.mockCreateCarCHandler.EXPECT().Handle(s.c, cmd).Return(tt.cHandlerErr)
+
+			jsonReqBody, err := json.Marshal(cmd)
+			s.Require().NoError(err)
+			s.c.Request = s.createCarReq(jsonReqBody)
+			s.sut.Create(s.c)
+
+			s.Require().Equal(tt.code, s.rr.Code)
+			s.Require().Equal(tt.responseBody, s.rr.Body.String())
+		})
+	}
+
+	s.Run("Invalid Request Body param (id is not an UUID)", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+
+		type invalidReqBody struct {
+			ID    int    `json:"id"`
+			VIN   string `json:"vin"`
+			Color string `json:"color"`
+		}
+
+		reqBody := invalidReqBody{ID: 27, VIN: "4Z1SL65848Z411440", Color: "Spectral Blue Portimao"}
+		jsonReqBody, err := json.Marshal(reqBody)
+		s.Require().NoError(err)
+		s.c.Request = s.createCarReq(jsonReqBody)
+		s.sut.Create(s.c)
+
+		s.Require().Equal(http.StatusBadRequest, s.rr.Code)
+		s.Require().Equal(
+			"{\"error\":\"bad request: json: cannot unmarshal number into Go struct field CreateCar.id of type uuid.UUID\"}",
+			s.rr.Body.String(),
+		)
+	})
+}
+
+func (s *carUnitSuite) getCarReq() *http.Request {
+	return httptest.NewRequest(http.MethodGet, "/i-dont-care-about-the-endpoint", nil)
+}
+
+func (s *carUnitSuite) createCarReq(jsonReqBody []byte) *http.Request {
+	return httptest.NewRequest(http.MethodPost, "/i-dont-care-about-the-endpoint", bytes.NewReader(jsonReqBody))
 }

@@ -4,7 +4,7 @@ mysqlDatabase=inventory
 mysqlHost=localhost
 mysqlPort=3308
 
-mock-gen:
+mock-gen: goa-gen-vehicle
 	go generate ./...
 
 # Generates all the mocks for this Inventory Context including the generation of common pkg mocks
