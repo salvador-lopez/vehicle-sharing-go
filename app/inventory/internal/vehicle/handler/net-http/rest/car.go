@@ -9,6 +9,7 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 	"vehicle-sharing-go/pkg/domain"
+	"vehicle-sharing-go/pkg/handler/rest"
 )
 
 //go:generate mockgen -destination=mock/create_car_command_handler_mock.go -package=mock . CreateCarCommandHandler
@@ -48,20 +49,20 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	carID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(newBadRequest(err))
+		_ = json.NewEncoder(w).Encode(rest.NewBadRequest(err))
 		return
 	}
 
 	carProjection, err := h.queryService.Find(ctx, carID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 		return
 	}
 
 	if carProjection == nil {
 		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(newNotFound(carID))
+		_ = json.NewEncoder(w).Encode(rest.NewNotFound(carID))
 		return
 	}
 
@@ -69,7 +70,7 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	err = json.NewEncoder(w).Encode(carProjection)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 		return
 	}
 }
@@ -93,7 +94,7 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 	err := json.NewDecoder(r.Body).Decode(&createCarCommand)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(newBadRequest(err))
+		_ = json.NewEncoder(w).Encode(rest.NewBadRequest(err))
 		return
 	}
 
@@ -101,12 +102,12 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
 			w.WriteHeader(http.StatusConflict)
-			_ = json.NewEncoder(w).Encode(newDomainConflict(err))
+			_ = json.NewEncoder(w).Encode(rest.NewDomainConflict(err))
 			return
 		}
 
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 	}
 	w.WriteHeader(http.StatusCreated)
 }

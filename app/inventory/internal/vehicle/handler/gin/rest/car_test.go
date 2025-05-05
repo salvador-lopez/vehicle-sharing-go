@@ -27,6 +27,10 @@ type carUnitSuite struct {
 	sut                 *rest.CarHandler
 }
 
+func (s *carUnitSuite) SetupSuite() {
+	gin.SetMode(gin.TestMode)
+}
+
 func (s *carUnitSuite) SetupTest() {
 	s.rr = httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(s.rr)
