@@ -40,3 +40,12 @@ swaggo-gen-vehicle:
 	  	-o internal/vehicle/handler/swago-annotations/docs \
 	  	--parseDependency \
 	  	--v3.1 true
+
+run-rest-api-goa:
+	go run ./cmd/vehicle/rest-api --server-library=goa
+
+run-rest-api-net-http:
+	go run ./cmd/vehicle/rest-api --server-library=net-http
+
+run-rest-api-gin:
+	go run ./cmd/vehicle/rest-api --server-library=gin
