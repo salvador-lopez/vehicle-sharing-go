@@ -12,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/gin"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/goa"
 	nethttp "vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/net-http"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
@@ -29,7 +30,7 @@ func main() {
 	// Define command line flags, add any other flag required to configure the
 	// service.
 	var (
-		serverLibrary = flag.String("server-library", "goa", "define which server library to use")
+		serverLibrary = flag.String("server-library", "", "define which server library to use")
 		hostF         = flag.String("host", "localhost", "Server host (valid values: localhost)")
 		domainF       = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
 		httpPortF     = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
@@ -129,8 +130,13 @@ func main() {
 			switch *serverLibrary {
 			case "net-http":
 				nethttp.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
-			default:
+			case "goa":
 				goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+			case "gin":
+				gin.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+			default:
+				logger.Println("No server library defined, defaulting to gin")
+				gin.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 			}
 		}
 
