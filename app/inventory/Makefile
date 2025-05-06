@@ -36,7 +36,7 @@ goa-gen-vehicle:
 swaggo-gen-vehicle:
 	swag init \
 		-g api_docs.go \
-	  	-d internal/vehicle/handler/swago-annotations,internal/vehicle/projection,internal/vehicle/command,../../pkg/handler/rest \
+	  	-d internal/vehicle/handler/swago-annotations,internal/vehicle/projection,internal/vehicle/command,$(PKG_DIR) \
 	  	-o internal/vehicle/handler/swago-annotations/docs \
 	  	--parseDependency \
 	  	--v3.1 true
