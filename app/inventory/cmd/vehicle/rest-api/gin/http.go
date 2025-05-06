@@ -1,21 +1,19 @@
 package gin
 
 import (
-	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gin/rest"
 )
 
 func HandleHTTPServer(
-	ctx context.Context,
+	shutdownHook func(server *http.Server, name string),
 	addr *url.URL,
 	carQueryService *gorm.CarProjectionRepository,
 	createCarCommandHandler *command.CreateCarHandler,
@@ -47,17 +45,5 @@ func HandleHTTPServer(
 		}
 	}()
 
-	// Shutdown hook
-	go func() {
-		<-ctx.Done()
-		logger.Println("shutting down gin server...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		err := server.Shutdown(shutdownCtx)
-		if err != nil {
-			logger.Println("error shutting down gin server.")
-			return
-		}
-		logger.Println("gin server shutdown gracefully.")
-	}()
+	shutdownHook(server, "gin")
 }

@@ -127,16 +127,18 @@ func main() {
 				u.Host = net.JoinHostPort(u.Host, "80")
 			}
 
+			shutdownHook := registerShutdownHook(ctx, logger)
+
 			switch *serverLibrary {
 			case "net-http":
-				nethttp.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+				nethttp.HandleHTTPServer(ctx, shutdownHook, u, carQueryService, createCarHandler, &wg, errc, logger)
 			case "goa":
 				goa.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 			case "gin":
-				gin.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+				gin.HandleHTTPServer(shutdownHook, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 			default:
 				logger.Println("No server library defined, defaulting to gin")
-				gin.HandleHTTPServer(ctx, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
+				gin.HandleHTTPServer(shutdownHook, u, carQueryService, createCarHandler, &wg, errc, logger, *dbgF)
 			}
 		}
 
