@@ -9,6 +9,7 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 	"vehicle-sharing-go/pkg/domain"
+	"vehicle-sharing-go/pkg/handler/rest"
 )
 
 //go:generate mockgen -destination=mock/create_car_command_handler_mock.go -package=mock . CreateCarCommandHandler
@@ -30,17 +31,6 @@ func NewCarHandler(ch CreateCarCommandHandler, qs FindCarQueryService) *CarHandl
 	return &CarHandler{commandHandler: ch, queryService: qs}
 }
 
-// Get godoc
-// @Summary      Get a car by ID
-// @Description  Returns a car resource with decoded VIN data
-// @Tags         car
-// @Produce      json
-// @Param        id   path      string  true  "Car UUID"
-// @Success      200  {object}  projection.Car
-// @Failure      400  {object}  ErrorResponse
-// @Failure      404  {object}  ErrorResponse
-// @Failure      500  {object}  ErrorResponse
-// @Router       /cars/{id} [get]
 func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -48,20 +38,20 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	carID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(newBadRequest(err))
+		_ = json.NewEncoder(w).Encode(rest.NewBadRequest(err))
 		return
 	}
 
 	carProjection, err := h.queryService.Find(ctx, carID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 		return
 	}
 
 	if carProjection == nil {
 		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(newNotFound(carID))
+		_ = json.NewEncoder(w).Encode(rest.NewNotFound(carID))
 		return
 	}
 
@@ -69,23 +59,11 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 	err = json.NewEncoder(w).Encode(carProjection)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 		return
 	}
 }
 
-// Create godoc
-// @Summary      Create a new car
-// @Description  Creates a new car record
-// @Tags         car
-// @Accept       json
-// @Produce      json
-// @Param        car  body      command.CreateCar true  "Create Car Body Params"
-// @Success      201  {string}  string            "Created"
-// @Failure      400  {object}  ErrorResponse
-// @Failure      409  {object}  ErrorResponse
-// @Failure      500  {object}  ErrorResponse
-// @Router       /cars [post]
 func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -93,7 +71,7 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 	err := json.NewDecoder(r.Body).Decode(&createCarCommand)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(newBadRequest(err))
+		_ = json.NewEncoder(w).Encode(rest.NewBadRequest(err))
 		return
 	}
 
@@ -101,12 +79,12 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
 			w.WriteHeader(http.StatusConflict)
-			_ = json.NewEncoder(w).Encode(newDomainConflict(err))
+			_ = json.NewEncoder(w).Encode(rest.NewDomainConflict(err))
 			return
 		}
 
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(newInternalError())
+		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 	}
 	w.WriteHeader(http.StatusCreated)
 }

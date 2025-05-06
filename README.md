@@ -11,7 +11,7 @@ Install docker & docker compose in your host SO:
 
 To generate OPENAPI 3 DOCS:
 
-- When using [GOA Design](https://goa.design/) as an HTTP Server
+- When using [GOA Design](https://goa.design/) as the HTTP Server
 ```bash
 go install goa.design/goa/v3/cmd/goa@latest
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -25,7 +25,7 @@ And then to generate the openapi doc files and the needed generated resources fr
 ```bash
 make goa-gen
 ```
-- When using [net/http go stlib](https://pkg.go.dev/net/http) as an HTTP Server
+- When using [net/http go stlib](https://pkg.go.dev/net/http) or [Gin](https://gin-gonic.com/) as the HTTP Server
 ```bash
 go install github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc4 # We need the v2 version as the lastest stable 1.6.4 not generate openapi3 spec
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -65,6 +65,7 @@ If you code with Goland You can use the [Project Running Configurations](https:/
 - REST API Server:
   - [With GOA Design](.run/inventory/vehicles/rest-api-goa.run.xml)
   - [With net/http and swaggo](.run/inventory/vehicles/rest-api-nethttp.run.xml)
+  - [With Gin and swaggo](.run/inventory/vehicles/rest-api-gin.run.xml)
 - Domain Event Consumer:
   - [With Kafka](.run/inventory/vehicles/domain-event-consumer-kafka.run.xml)
 - Message Relay:

@@ -9,18 +9,18 @@ type ErrorResponse struct {
 	Error string `json:"error" example:"internal server error"`
 }
 
-func newInternalError() *ErrorResponse {
+func NewInternalError() *ErrorResponse {
 	return &ErrorResponse{Error: "internal error"}
 }
 
-func newBadRequest(err error) *ErrorResponse {
+func NewBadRequest(err error) *ErrorResponse {
 	return &ErrorResponse{Error: fmt.Sprintf("bad request: %v", err)}
 }
 
-func newNotFound(id uuid.UUID) *ErrorResponse {
+func NewNotFound(id uuid.UUID) *ErrorResponse {
 	return &ErrorResponse{Error: fmt.Sprintf("not found: %v", id)}
 }
 
-func newDomainConflict(err error) *ErrorResponse {
+func NewDomainConflict(err error) *ErrorResponse {
 	return &ErrorResponse{Error: err.Error()}
 }

@@ -14,4 +14,5 @@ goa-gen:
 	$(MAKE) -C app/inventory goa-gen-vehicle
 
 swaggo-gen:
-	$(MAKE) -C app/inventory swaggo-gen-vehicle
+	$(MAKE) -C app/inventory swaggo-gen-vehicle \
+		PKG_DIR=$$(realpath pkg/handler/rest)
