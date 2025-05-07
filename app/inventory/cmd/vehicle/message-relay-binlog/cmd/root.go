@@ -25,7 +25,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(func() {
-		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay-binlog/cmd", "message-relay-binlog"))
+		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay-binlog/cmd", "message-relay"))
 	})
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
