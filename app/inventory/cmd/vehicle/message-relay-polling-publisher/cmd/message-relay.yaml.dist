@@ -1,0 +1,18 @@
+db:
+    conn:
+        host: "localhost"
+        user: "root"
+        password: "root"
+        port: "3308"
+    name: "inventory"
+    outboxTableRef: "outbox"
+    payloadColumnName: "payload"
+    aggregateIdColumnName: "aggregate_id"
+    aggregateTypeColumnName: "aggregate_type"
+
+kafka:
+    brokers:
+        - "localhost:19092"
+    groupId: "inventory-vehicles"
+    topics:
+        - "inventory-vehicles-car"

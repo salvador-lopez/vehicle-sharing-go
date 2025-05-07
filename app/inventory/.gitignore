@@ -2,4 +2,5 @@ internal/vehicle/handler/goa/gen
 internal/vehicle/handler/swago-annotations/docs
 
 cmd/vehicle/message-relay-binlog/cmd/message-relay.yaml
+cmd/vehicle/message-relay-polling-publisher/cmd/message-relay.yaml
 cmd/vehicle/domain-event-consumer/cmd/consumer.yaml
