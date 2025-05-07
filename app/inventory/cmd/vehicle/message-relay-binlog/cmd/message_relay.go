@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/lorenzoranucci/tor/adapters/kafka"
 	redisadapter "github.com/lorenzoranucci/tor/adapters/redis"
 	"github.com/lorenzoranucci/tor/router/pkg/run"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -63,12 +61,6 @@ var runCmd = &cobra.Command{
 
 func init() {
 	viper.AutomaticEnv()
-	viper.SetDefault("includeTransactionTimestamp", true)
-
-	// Configure logrus for tor/router
-	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
-	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.InfoLevel)
 
 	rootCmd.AddCommand(runCmd)
 }
