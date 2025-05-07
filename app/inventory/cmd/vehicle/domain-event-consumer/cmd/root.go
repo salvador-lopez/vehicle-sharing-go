@@ -27,6 +27,4 @@ func init() {
 	cobra.OnInitialize(func() {
 		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/domain-event-consumer/cmd", "consumer"))
 	})
-
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

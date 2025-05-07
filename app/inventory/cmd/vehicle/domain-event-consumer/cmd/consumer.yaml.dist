@@ -1,0 +1,14 @@
+db:
+    conn:
+        host: "localhost"
+        port: 3308
+        user: "inventory"
+        password: "inventory"
+    name: "inventory"
+
+kafka:
+    brokers:
+        - "localhost:19092"
+    groupId: "inventory-vehicles"
+    topics:
+        - "inventory-vehicles-car"

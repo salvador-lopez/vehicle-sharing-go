@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -22,6 +24,24 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
+
+type KafkaConfig struct {
+	Brokers []string
+	GroupId string
+	Topics  []string
+}
+
+type DbConfig struct {
+	Conn DbConn
+	Name string
+}
+
+type DbConn struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+}
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -43,22 +63,36 @@ var runCmd = &cobra.Command{
 		var wg sync.WaitGroup
 		ctx, cancel := context.WithCancel(context.Background())
 
-		c, err := kafka.NewConsumer(&kafka.ConfigMap{
-			"bootstrap.servers":     "localhost:19092",
-			"broker.address.family": "v4",
-			"group.id":              "inventory-vehicles",
-			"auto.offset.reset":     "earliest",
-		})
-
-		// Setup logger. Replace logger with your own log package of choice.
 		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
 
+		var kafkaCfg KafkaConfig
+		err := viper.UnmarshalKey("kafka", &kafkaCfg)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		c, err := kafka.NewConsumer(&kafka.ConfigMap{
+			"bootstrap.servers":     strings.Join(kafkaCfg.Brokers, ","),
+			"broker.address.family": "v4",
+			"group.id":              kafkaCfg.GroupId,
+			"auto.offset.reset":     "earliest",
+		})
+		if err != nil {
+			logger.Fatalf("failed to create kafka consumer: %v", err)
+		}
+
+		var dbCfg DbConfig
+		err = viper.UnmarshalKey("db", &dbCfg)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		connCfg := dbCfg.Conn
 		dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
-			UserName:     "inventory",
-			Password:     "inventory",
-			DatabaseName: "inventory",
-			Host:         "localhost",
-			Port:         3308,
+			Host:         connCfg.Host,
+			Port:         connCfg.Port,
+			UserName:     connCfg.User,
+			Password:     connCfg.Password,
+			DatabaseName: dbCfg.Name,
 			Logger:       logger,
 			LogQueries:   false,
 		})
@@ -75,15 +109,11 @@ var runCmd = &cobra.Command{
 
 		carProjector := projection.NewCarProjector(vinDecoderFake{}, carRepo)
 
-		if err != nil {
-			panic(err)
-		}
-
 		defer c.Close()
 
-		err = c.SubscribeTopics([]string{"inventory-vehicles-car"}, nil)
+		err = c.SubscribeTopics(kafkaCfg.Topics, nil)
 		if err != nil {
-			panic(err)
+			logger.Fatalf("failed to subscribe to kafka topics: %v", err)
 		}
 
 		go func() {
