@@ -10,7 +10,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "inventory-message-relay",
+	Use:   "inventory-message-relay-binlog",
 	Short: "Read events about an outbox table from MySQL binlog, write them on Kafka preserving order. Persist state on Redis.",
 }
 
@@ -25,7 +25,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(func() {
-		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay/cmd", "message-relay"))
+		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay-binlog/cmd", "message-relay-binlog"))
 	})
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
