@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type KafkaConfig struct {
+	Brokers        []string
+	Topics         []KafkaTopic
+	HeaderMappings []kafka.HeaderMapping
+}
 type KafkaTopic struct {
 	Name                string
 	NumPartitions       int32
@@ -27,12 +32,40 @@ type KafkaHeaderMappings struct {
 	HeaderName string
 }
 
+type DbConfig struct {
+	Conn                    DbConn
+	Name                    string
+	OutboxTableRef          string
+	PayloadColumnName       string
+	AggregateIdColumnName   string
+	AggregateTypeColumnName string
+}
+
+type DbConn struct {
+	Host     string
+	User     string
+	Password string
+	Port     string
+}
+
+type RedisConfig struct {
+	Host string
+	Port string
+	Key  string
+}
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run the application",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := canal.NewCanal(getCanalConfig())
+		var dbCfg DbConfig
+		err := viper.UnmarshalKey("db", &dbCfg)
+		if err != nil {
+			return err
+		}
+
+		c, err := canal.NewCanal(getCanalConfig(&dbCfg))
 		if err != nil {
 			return err
 		}
@@ -42,12 +75,16 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		stateHandler := getRedisStateHandler()
+		stateHandler, err := getRedisStateHandler()
+		if err != nil {
+			return err
+		}
+
 		handler, err := run.NewEventHandler(
 			ed,
-			viper.GetString("dbAggregateIDColumnName"),
-			viper.GetString("dbAggregateTypeColumnName"),
-			viper.GetString("dbPayloadColumnName"),
+			dbCfg.AggregateIdColumnName,
+			dbCfg.AggregateTypeColumnName,
+			dbCfg.PayloadColumnName,
 		)
 		if err != nil {
 			return err
@@ -66,24 +103,24 @@ func init() {
 }
 
 func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
-	producer, err := getKafkaSyncProducer()
+	var kafkaCfg KafkaConfig
+	err := viper.UnmarshalKey("kafka", &kafkaCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	admin, err := sarama.NewClusterAdmin(viper.GetStringSlice("kafkaBrokers"), sarama.NewConfig())
+	producer, err := getKafkaSyncProducer(kafkaCfg.Brokers)
 	if err != nil {
 		return nil, err
 	}
 
-	var kafkaTopics []KafkaTopic
-	err = viper.UnmarshalKey("kafkaTopics", &kafkaTopics)
+	admin, err := sarama.NewClusterAdmin(kafkaCfg.Brokers, sarama.NewConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	topics := make([]kafka.Topic, 0, len(kafkaTopics))
-	for _, topic := range kafkaTopics {
+	topics := make([]kafka.Topic, 0, len(kafkaCfg.Topics))
+	for _, topic := range kafkaCfg.Topics {
 		topics = append(topics, kafka.Topic{
 			Name: topic.Name,
 			TopicDetail: &sarama.TopicDetail{
@@ -94,23 +131,17 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 		})
 	}
 
-	var kafkaHeaderMappings []kafka.HeaderMapping
-	err = viper.UnmarshalKey("kafkaHeaderMappings", &kafkaHeaderMappings)
-	if err != nil {
-		return nil, err
-	}
-
-	return kafka.NewEventDispatcher(producer, admin, topics, kafkaHeaderMappings)
+	return kafka.NewEventDispatcher(producer, admin, topics, kafkaCfg.HeaderMappings)
 }
 
-func getKafkaSyncProducer() (sarama.SyncProducer, error) {
+func getKafkaSyncProducer(kafkaBrokersCfg []string) (sarama.SyncProducer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll // Wait for all in-sync replicas to ack the message
 	config.Producer.Retry.Max = 10                   // Retry up to 10 times to produce the message
 	config.Producer.Return.Successes = true
 	config.Metadata.AllowAutoTopicCreation = false
 
-	producer, err := sarama.NewSyncProducer(viper.GetStringSlice("kafkaBrokers"), config)
+	producer, err := sarama.NewSyncProducer(kafkaBrokersCfg, config)
 	if err != nil {
 		return nil, err
 	}
@@ -118,24 +149,28 @@ func getKafkaSyncProducer() (sarama.SyncProducer, error) {
 	return producer, err
 }
 
-func getRedisStateHandler() *redisadapter.StateHandler {
+func getRedisStateHandler() (*redisadapter.StateHandler, error) {
+	var redisCfg RedisConfig
+	err := viper.UnmarshalKey("redis", &redisCfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return redisadapter.NewStateHandler(
-		redis.NewClient(&redis.Options{
-			Addr: fmt.Sprintf("%s:%s", viper.GetString("redisHost"), viper.GetString("redisPort")),
-			DB:   viper.GetInt("redisDB"),
-		}),
-		viper.GetString("redisKey"),
-	)
+		redis.NewClient(&redis.Options{Addr: fmt.Sprintf("%s:%s", redisCfg.Host, redisCfg.Port)}),
+		redisCfg.Key,
+	), nil
 }
 
-func getCanalConfig() *canal.Config {
-	cfg := canal.NewDefaultConfig()
+func getCanalConfig(dbCfg *DbConfig) *canal.Config {
+	dbConn := dbCfg.Conn
 
-	cfg.Addr = fmt.Sprintf("%s:%s", viper.GetString("dbHost"), viper.GetString("dbPort"))
-	cfg.User = viper.GetString("dbUser")
-	cfg.Password = viper.GetString("dbPassword")
+	cfg := canal.NewDefaultConfig()
+	cfg.Addr = fmt.Sprintf("%s:%s", dbConn.Host, dbConn.Port)
+	cfg.User = dbConn.User
+	cfg.Password = dbConn.Password
 	cfg.Dump.ExecutionPath = ""
-	cfg.IncludeTableRegex = []string{fmt.Sprintf(".*\\.%s", viper.Get("dbOutboxTableRef"))}
+	cfg.IncludeTableRegex = []string{fmt.Sprintf(".*\\.%s", dbCfg.OutboxTableRef)}
 	cfg.MaxReconnectAttempts = 10
 
 	return cfg

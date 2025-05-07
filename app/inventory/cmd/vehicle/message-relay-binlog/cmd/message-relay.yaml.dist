@@ -1,25 +1,26 @@
-dbAggregateIdColumnName: "aggregate_id"
-dbAggregateTypeColumnName: "aggregate_type"
+db:
+    conn:
+        host: "localhost"
+        user: "root"
+        password: "root"
+        port: "3308"
+    name: "inventory"
+    outboxTableRef: "outbox"
+    payloadColumnName: "payload"
+    aggregateIdColumnName: "aggregate_id"
+    aggregateTypeColumnName: "aggregate_type"
 
-dbHost: "localhost"
-dbName: "inventory"
-dbOutboxTableRef: "outbox"
-dbPayloadColumnName: "payload"
-dbUser: "root"
-dbPassword: "root"
-dbPort: "3308"
+redis:
+    host: "localhost"
+    port: 6379
+    key: "inventory:message-relay-binlog"
 
-redisDb: "inventory"
-redisHost: "localhost"
-redis-key: "message-relay"
-redisPort: "6379"
-
-kafkaBrokers:
-  - "localhost:19092"
-
-kafkaTopics:
-  -
-    name: "inventory-vehicles-car"
-    numPartitions: 1
-    replicationFactor: 1
-    aggregateTypeRegexp: "Car"
+kafka:
+    brokers:
+      - "localhost:19092"
+    topics:
+      -
+        name: "inventory-vehicles-car"
+        numPartitions: 1
+        replicationFactor: 1
+        aggregateTypeRegexp: "Car"
