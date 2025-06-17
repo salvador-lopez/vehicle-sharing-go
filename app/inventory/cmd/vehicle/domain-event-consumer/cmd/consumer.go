@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/signal"
@@ -13,6 +12,8 @@ import (
 	"syscall"
 	"time"
 	vehiclemodel "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
+
+	"github.com/spf13/viper"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 
@@ -118,34 +119,40 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			for {
-				msg, err := c.ReadMessage(time.Second)
-				if err == nil {
-					logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
+				select {
+				case <-ctx.Done():
+					logger.Println("Context cancelled, stopping consumer loop")
+					return
+				default:
+					msg, err := c.ReadMessage(time.Second)
+					if err == nil {
+						logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
 
-					aggregateID, err := uuid.Parse(string(msg.Key))
-					if err != nil {
-						logger.Printf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+						aggregateID, err := uuid.Parse(string(msg.Key))
+						if err != nil {
+							logger.Printf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+							errc <- err
+						}
+
+						var payload event.CarCreatedPayload
+						err = json.Unmarshal(msg.Value, &payload)
+						if err != nil {
+							logger.Printf("Error Unmarshalling message: %v (%v)\n", err, msg)
+							errc <- err
+						}
+
+						err = carProjector.ProjectCarCreated(ctx, aggregateID, &payload)
+						if err != nil {
+							logger.Printf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
+							errc <- err
+						}
+					} else if !err.(kafka.Error).IsTimeout() {
+						// The client will automatically try to recover from all errors.
+						// Timeout is not considered an error because it is raised by
+						// ReadMessage in absence of messages.
+						logger.Printf("Consumer error: %v (%v)\n", err, msg)
 						errc <- err
 					}
-
-					var payload *event.CarCreatedPayload
-					err = json.Unmarshal(msg.Value, &payload)
-					if err != nil {
-						logger.Printf("Error Unmarshalling message: %v (%v)\n", err, msg)
-						errc <- err
-					}
-
-					err = carProjector.ProjectCarCreated(ctx, aggregateID, payload)
-					if err != nil {
-						logger.Printf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
-						errc <- err
-					}
-				} else if !err.(kafka.Error).IsTimeout() {
-					// The client will automatically try to recover from all errors.
-					// Timeout is not considered an error because it is raised by
-					// ReadMessage in absence of messages.
-					logger.Printf("Consumer error: %v (%v)\n", err, msg)
-					errc <- err
 				}
 			}
 		}()
