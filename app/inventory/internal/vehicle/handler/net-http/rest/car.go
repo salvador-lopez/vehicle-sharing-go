@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
 	"net/http"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 	"vehicle-sharing-go/pkg/domain"
 	"vehicle-sharing-go/pkg/handler/rest"
+
+	"github.com/google/uuid"
 )
 
 //go:generate mockgen -destination=mock/create_car_command_handler_mock.go -package=mock . CreateCarCommandHandler
