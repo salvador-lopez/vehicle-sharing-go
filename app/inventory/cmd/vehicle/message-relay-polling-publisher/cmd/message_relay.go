@@ -100,7 +100,7 @@ var runCmd = &cobra.Command{
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
-		p := messaging.NewPollingPublisher(outboxRepo, eventPublisher, logger)
+		pp := messaging.NewPollingPublisher(outboxRepo, eventPublisher, logger)
 
 		go func() {
 			for {
@@ -109,7 +109,7 @@ var runCmd = &cobra.Command{
 					logger.Println("Polling publisher shutting down")
 					return
 				case <-ticker.C:
-					if err := p.RunBatch(ctx, 10); err != nil {
+					if err := pp.RunBatch(ctx, 10); err != nil {
 						errc <- err
 						return
 					}
