@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 	vehiclemodel "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
@@ -49,20 +48,17 @@ var runCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the consumer",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Create channel used by both the signal handler and server goroutines
-		// to notify the main goroutine when to stop the server.
 		errc := make(chan error)
 
-		// Setup interrupt handler. This optional step configures the process so
-		// that SIGINT and SIGTERM signals cause the services to stop gracefully.
+		// Graceful shutdown
 		go func() {
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 			errc <- fmt.Errorf("%s", <-c)
 		}()
 
-		var wg sync.WaitGroup
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
 		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
 
@@ -81,6 +77,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.Fatalf("failed to create kafka consumer: %v", err)
 		}
+		defer c.Close()
 
 		var dbCfg DbConfig
 		err = viper.UnmarshalKey("db", &dbCfg)
@@ -109,8 +106,6 @@ var runCmd = &cobra.Command{
 		}
 
 		carProjector := projection.NewCarProjector(vinDecoderFake{}, carRepo)
-
-		defer c.Close()
 
 		err = c.SubscribeTopics(kafkaCfg.Topics, nil)
 		if err != nil {
@@ -159,14 +154,8 @@ var runCmd = &cobra.Command{
 
 		logger.Println("Consumer started successfully")
 
-		// Wait for signal.
+		// Wait for error signal.
 		logger.Printf("exiting (%v)", <-errc)
-
-		// Send cancellation signal to the goroutines.
-		cancel()
-
-		wg.Wait()
-		logger.Println("exited")
 
 		return nil
 	},
