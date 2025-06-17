@@ -45,15 +45,10 @@ func TestOutboxRepoIntegrationSuite(t *testing.T) {
 
 func (s *outboxRepoIntegrationSuite) TestPublish() {
 	evtId := uuid.New()
-	now := time.Now()
 
 	var events []*event.Event
-	evtPayload := s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue", now)
-	carCreatedEvent := s.buildCarCreatedEvent(
-		evtId,
-		evtPayload,
-		now,
-	)
+	evtPayload := s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue")
+	carCreatedEvent := s.buildCarCreatedEvent(evtId, evtPayload)
 	events = append(events, carCreatedEvent)
 	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
 
@@ -74,53 +69,53 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	RequireEqualDates(evtPayload.UpdatedAt, evtPayloadFound.UpdatedAt, s.Require())
 
 	RequireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
+
+	// This should be nil because the outbox repo is only storing the record in database but not publishing to messaging system
+	s.Require().Nil(outboxRecordStored.PublishedAt)
 }
 
-func (s *outboxRepoIntegrationSuite) TestPollAfter() {
-	now := time.Now()
-
-	oneHourAgo := now.Add(-time.Hour)
-	twoHoursAgo := now.Add(-time.Hour * 2)
-
+func (s *outboxRepoIntegrationSuite) TestPoll() {
 	var events []*event.Event
 
-	nonPolledEvent := s.buildCarCreatedEvent(
+	anEvent := s.buildCarCreatedEvent(
 		uuid.New(),
-		s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue", now),
-		now,
+		s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue"),
 	)
-	alreadyPolledEvent := s.buildCarCreatedEvent(
+	anotherEvent := s.buildCarCreatedEvent(
 		uuid.New(),
-		s.buildCarCreatedEventPayload("6Y1SL65848D411438", "Black Bullet", twoHoursAgo),
-		twoHoursAgo,
+		s.buildCarCreatedEventPayload("6Y1SL65848D411438", "Black Bullet"),
 	)
-	events = append(events, nonPolledEvent)
-	events = append(events, alreadyPolledEvent)
+	events = append(events, anEvent)
+	events = append(events, anotherEvent)
 	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
 
-	polledEvts, err := s.sut.PollAfter(s.Ctx(), oneHourAgo, len(events))
+	polledEvts, err := s.sut.Poll(s.Ctx(), len(events))
 	s.Require().NoError(err)
-	s.Require().Len(polledEvts, 1)
-	s.Require().Equal(polledEvts[0].ID, nonPolledEvent.ID)
+	s.Require().Len(polledEvts, 2)
+
+	polledEvts, err = s.sut.Poll(s.Ctx(), len(events))
+	s.Require().NoError(err)
+	s.Require().Empty(polledEvts)
 }
 
-func (s *outboxRepoIntegrationSuite) buildCarCreatedEventPayload(vinNumber, color string, time time.Time) *CarCreatedPayload {
+func (s *outboxRepoIntegrationSuite) buildCarCreatedEventPayload(vinNumber, color string) *CarCreatedPayload {
+	now := time.Now()
 	return &CarCreatedPayload{
 		VinNumber: vinNumber,
 		Color:     color,
-		CreatedAt: time,
-		UpdatedAt: time,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 }
 
-func (s *outboxRepoIntegrationSuite) buildCarCreatedEvent(id uuid.UUID, payload *CarCreatedPayload, timestamp time.Time) *event.Event {
+func (s *outboxRepoIntegrationSuite) buildCarCreatedEvent(id uuid.UUID, payload *CarCreatedPayload) *event.Event {
 	carCreatedEvent := &event.Event{
 		ID:            id,
 		AggregateID:   uuid.New(),
 		AggregateType: "Car",
 		EventType:     "CarCreatedEvent",
 		Payload:       payload,
-		Timestamp:     timestamp,
+		Timestamp:     time.Now(),
 	}
 	s.evtIDs = append(s.evtIDs, carCreatedEvent.ID)
 

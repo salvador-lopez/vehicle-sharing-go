@@ -2,8 +2,6 @@ package gorm
 
 import (
 	"context"
-	"time"
-
 	"vehicle-sharing-go/pkg/database/gorm/model"
 	"vehicle-sharing-go/pkg/domain/event"
 )
@@ -32,12 +30,12 @@ func (o *OutboxRepository) Publish(ctx context.Context, events []*event.Event) e
 	return o.conn.Db().WithContext(ctx).Create(records).Error
 }
 
-func (o *OutboxRepository) PollAfter(ctx context.Context, after time.Time, limit int) ([]*event.Event, error) {
+func (o *OutboxRepository) Poll(ctx context.Context, limit int) ([]*event.Event, error) {
 	var records []*model.OutboxRecord
 
 	err := o.conn.Db().
 		WithContext(ctx).
-		Where("created_at > ?", after).
+		Where("published_at IS NOT NULL").
 		Order("created_at ASC").
 		Limit(limit).
 		Find(&records).Error
