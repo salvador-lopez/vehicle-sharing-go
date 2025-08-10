@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
 	vehiclemodel "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"

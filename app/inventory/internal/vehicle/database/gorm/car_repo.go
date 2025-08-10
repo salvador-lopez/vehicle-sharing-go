@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
@@ -19,7 +20,7 @@ func NewCarRepository(conn *gormpkg.Connection) *CarRepository {
 }
 
 func (c *CarRepository) Create(ctx context.Context, car *domain.Car) error {
-	carModel := &model.Car{Car: car.ToModel()}
+	carModel := &model.Car{Car: domain.ToDataModel(car)}
 
 	err := c.conn.Db().WithContext(ctx).Create(carModel).Error
 
