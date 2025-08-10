@@ -1,11 +1,11 @@
 package model
 
 import (
-	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/model"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/datamodel"
 )
 
 type Car struct {
-	*model.Car
+	*datamodel.Car
 }
 
 // TableName This is not needed but added in order to exemplify why we are composing the gorm model.Car with the domain model.Car

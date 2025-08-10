@@ -12,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/gin"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/goa"
 	nethttp "vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api/net-http"

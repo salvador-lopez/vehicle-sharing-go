@@ -16,7 +16,7 @@ var vinData = ResultType("vin_data", func() {
 		Attribute("brand", String)
 		Attribute("engineSize", String)
 		Attribute("fuelType", String)
-		Attribute("model", String)
+		Attribute("datamodel", String)
 		Attribute("year", String)
 		Attribute("assemblyPlant", String)
 		Attribute("SN", String)

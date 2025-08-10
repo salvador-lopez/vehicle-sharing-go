@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/model"
 
 	"vehicle-sharing-go/pkg/domain"
 )
@@ -37,20 +36,4 @@ func (c *Car) recordCreatedEvent(evtID uuid.UUID, timestamp time.Time) {
 		CreatedAt: c.CreatedAt(),
 		UpdatedAt: c.UpdatedAt(),
 	}, timestamp)
-}
-
-func CarFromModel(model *model.Car) *Car {
-	return &Car{
-		domain.AggregateRootFromModel(model.AggregateRoot),
-		&VIN{model.VinNumber},
-		model.Color,
-	}
-}
-
-func (c *Car) ToModel() *model.Car {
-	return &model.Car{
-		VinNumber:     c.vin.number,
-		Color:         c.color,
-		AggregateRoot: c.AggregateRoot.ToDataModel(),
-	}
 }

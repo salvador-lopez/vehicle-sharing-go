@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
 	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	"github.com/golang/mock/gomock"
@@ -17,12 +18,12 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command/mock"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/datamodel"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
-	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/model"
 
+	modelpkg "vehicle-sharing-go/pkg/domain/datamodel"
 	eventpkg "vehicle-sharing-go/pkg/domain/event"
 	mockeventpkg "vehicle-sharing-go/pkg/domain/event/mock"
-	modelpkg "vehicle-sharing-go/pkg/domain/model"
 )
 
 const (
@@ -89,7 +90,7 @@ func (s *createCarUnitSuite) TestCreateCar() {
 
 	recordedEvents := []*eventpkg.Event{recordedEvent}
 
-	expectedCar := domain.CarFromModel(&model.Car{
+	expectedCar := domain.FromDataModel(&datamodel.Car{
 		VinNumber: validVinNumber,
 		Color:     color,
 		AggregateRoot: &modelpkg.AggregateRoot{

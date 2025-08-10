@@ -34,7 +34,7 @@ type VINData struct {
 	Brand         *string `gorm:"type:varchar(255)" json:"brand"`
 	EngineSize    *string `gorm:"type:varchar(255)" json:"engineSize"`
 	FuelType      *string `gorm:"type:varchar(255)" json:"fuelType"`
-	Model         *string `gorm:"type:varchar(255)" json:"model"`
+	Model         *string `gorm:"type:varchar(255)" json:"datamodel"`
 	Year          *string `gorm:"type:varchar(255)" json:"year"`
 	AssemblyPlant *string `gorm:"type:varchar(255)" json:"assemblyPlant"`
 	SN            *string `gorm:"type:varchar(255)" json:"sn"`

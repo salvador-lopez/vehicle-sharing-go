@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 
 	"vehicle-sharing-go/pkg/domain/event"
-	"vehicle-sharing-go/pkg/domain/model"
 )
 
 type AggregateRoot struct {
@@ -34,24 +33,4 @@ func (a *AggregateRoot) RecordEvent(eventID uuid.UUID, eventType, aggregateType 
 			Timestamp:     timestamp,
 		},
 	)
-}
-
-func (a *AggregateRoot) ToDataModel() *model.AggregateRoot {
-	return &model.AggregateRoot{
-		ID:        a.id,
-		CreatedAt: a.createdAt,
-		UpdatedAt: a.updatedAt,
-	}
-}
-
-func AggregateRootFromModel(aggRootModel *model.AggregateRoot) *AggregateRoot {
-	var recordedEvents []*event.Event
-	for _, evt := range aggRootModel.RecordedEvents {
-		recordedEvents = append(recordedEvents, evt)
-	}
-
-	return &AggregateRoot{
-		BaseEntity:     &BaseEntity{id: aggRootModel.ID, createdAt: aggRootModel.CreatedAt, updatedAt: aggRootModel.UpdatedAt},
-		recordedEvents: recordedEvents,
-	}
 }

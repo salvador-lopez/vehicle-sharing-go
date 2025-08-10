@@ -5,6 +5,7 @@ package gorm
 import (
 	"testing"
 	"time"
+
 	pkgdomain "vehicle-sharing-go/pkg/domain"
 
 	"github.com/google/uuid"
@@ -13,10 +14,10 @@ import (
 	gormvehicle "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain"
-	domainmodel "vehicle-sharing-go/app/inventory/internal/vehicle/domain/model"
+	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/datamodel"
 
 	"vehicle-sharing-go/pkg/database/test/integration/gorm"
-	domainmodelpkg "vehicle-sharing-go/pkg/domain/model"
+	datamodelpkg "vehicle-sharing-go/pkg/domain/datamodel"
 )
 
 type carRepoIntegrationSuite struct {
@@ -46,16 +47,16 @@ func TestCarRepoIntegrationSuite(t *testing.T) {
 }
 
 func (s *carRepoIntegrationSuite) TestCreate() {
-	carModel := &domainmodel.Car{
+	carModel := &datamodel.Car{
 		VinNumber: "4Y1SL65848Z411439",
 		Color:     "Spectral Blue",
-		AggregateRoot: &domainmodelpkg.AggregateRoot{
+		AggregateRoot: &datamodelpkg.AggregateRoot{
 			ID:        s.carId,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 	}
-	car := domain.CarFromModel(carModel)
+	car := domain.FromDataModel(carModel)
 	s.Require().NoError(s.sut.Create(s.Ctx(), car))
 
 	var gormCarStored *model.Car
@@ -70,16 +71,16 @@ func (s *carRepoIntegrationSuite) TestCreate() {
 }
 
 func (s *carRepoIntegrationSuite) TestCreateSameCarTwiceReturnErrCarAlreadyExist() {
-	carModel := &domainmodel.Car{
+	carModel := &datamodel.Car{
 		VinNumber: "4Y1SL65848Z411439",
 		Color:     "Spectral Blue",
-		AggregateRoot: &domainmodelpkg.AggregateRoot{
+		AggregateRoot: &datamodelpkg.AggregateRoot{
 			ID:        s.carId,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 	}
-	car := domain.CarFromModel(carModel)
+	car := domain.FromDataModel(carModel)
 	s.Require().NoError(s.sut.Create(s.Ctx(), car))
 	err := s.sut.Create(s.Ctx(), car)
 	s.Require().ErrorIs(err, pkgdomain.ErrConflict)
