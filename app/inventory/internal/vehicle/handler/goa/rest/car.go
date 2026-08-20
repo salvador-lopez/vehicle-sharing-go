@@ -55,7 +55,7 @@ func (v CarHandler) Get(ctx context.Context, payload *car.GetPayload) (res *car.
 			Brand:         carProjection.Brand,
 			EngineSize:    carProjection.EngineSize,
 			FuelType:      carProjection.FuelType,
-			Model:         carProjection.Model,
+			Datamodel:     carProjection.Model,
 			Year:          carProjection.Year,
 			AssemblyPlant: carProjection.AssemblyPlant,
 			SN:            carProjection.SN,
