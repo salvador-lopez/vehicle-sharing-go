@@ -159,7 +159,7 @@ func (s *carUnitSuite) TestGet() {
 						Brand:         &tt.brand,
 						EngineSize:    &tt.engineSize,
 						FuelType:      &tt.fuelType,
-						Model:         &tt.model,
+						Datamodel:     &tt.model,
 						Year:          &tt.year,
 						AssemblyPlant: &tt.assemblyPlant,
 						SN:            &tt.sn,
