@@ -65,6 +65,15 @@ func (s *carProjectionRepoIntegrationSuite) TestProject() {
 	s.requireEqualProjections(carProjectionExpected, carProjectionModel.Car)
 }
 
+func (s *carProjectionRepoIntegrationSuite) TestFindReturnsNilWhenCarDoesNotExist() {
+	nonExistentID := uuid.New()
+
+	car, err := s.sut.Find(s.Ctx(), nonExistentID)
+
+	s.Require().NoError(err)
+	s.Require().Nil(car)
+}
+
 func (s *carProjectionRepoIntegrationSuite) TestFind() {
 	carProjectionExpected := &projection.Car{
 		ID:        s.carId,
