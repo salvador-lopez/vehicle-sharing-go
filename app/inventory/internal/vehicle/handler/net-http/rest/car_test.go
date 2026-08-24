@@ -278,4 +278,27 @@ func (s *carUnitSuite) TestCreate() {
 			rr.Body.String(),
 		)
 	})
+
+	s.Run("Missing id in request body returns 400", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+
+		type reqBodyWithoutID struct {
+			VIN   string `json:"vin"`
+			Color string `json:"color"`
+		}
+
+		reqBody := reqBodyWithoutID{VIN: "4Y1SL65848Z411439", Color: "Spectral Blue"}
+		jsonReqBody, err := json.Marshal(reqBody)
+		s.Require().NoError(err)
+		req := httptest.NewRequest(http.MethodPost, "/cars", bytes.NewReader(jsonReqBody))
+		rr := httptest.NewRecorder()
+		s.sut.Create(s.ctx, rr, req)
+
+		s.Require().Equal(http.StatusBadRequest, rr.Code)
+		s.Require().Equal(
+			"{\"error\":\"bad request: id is required\"}\n",
+			rr.Body.String(),
+		)
+	})
 }

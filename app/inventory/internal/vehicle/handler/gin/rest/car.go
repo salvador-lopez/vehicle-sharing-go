@@ -59,6 +59,11 @@ func (h *CarHandler) Create(c *gin.Context) {
 		return
 	}
 
+	if createCarCommand.ID == uuid.Nil {
+		c.JSON(http.StatusBadRequest, rest.NewBadRequest(errors.New("id is required")))
+		return
+	}
+
 	err := h.commandHandler.Handle(c, &createCarCommand)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {

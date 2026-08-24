@@ -75,6 +75,12 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 		return
 	}
 
+	if createCarCommand.ID == uuid.Nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(rest.NewBadRequest(errors.New("id is required")))
+		return
+	}
+
 	err = h.commandHandler.Handle(ctx, &createCarCommand)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {

@@ -6,10 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,6 +15,11 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/handler/gin/rest/mock"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 	"vehicle-sharing-go/pkg/domain"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/suite"
 )
 
 type carUnitSuite struct {
@@ -277,6 +278,28 @@ func (s *carUnitSuite) TestCreate() {
 		s.Require().Equal(http.StatusBadRequest, s.rr.Code)
 		s.Require().Equal(
 			"{\"error\":\"bad request: json: cannot unmarshal number into Go struct field CreateCar.id of type uuid.UUID\"}",
+			s.rr.Body.String(),
+		)
+	})
+
+	s.Run("Missing id in request body returns 400", func() {
+		s.SetupTest()
+		defer s.TearDownTest()
+
+		type reqBodyWithoutID struct {
+			VIN   string `json:"vin"`
+			Color string `json:"color"`
+		}
+
+		reqBody := reqBodyWithoutID{VIN: "4Y1SL65848Z411439", Color: "Spectral Blue"}
+		jsonReqBody, err := json.Marshal(reqBody)
+		s.Require().NoError(err)
+		s.c.Request = s.createCarReq(jsonReqBody)
+		s.sut.Create(s.c)
+
+		s.Require().Equal(http.StatusBadRequest, s.rr.Code)
+		s.Require().Equal(
+			"{\"error\":\"bad request: id is required\"}",
 			s.rr.Body.String(),
 		)
 	})
