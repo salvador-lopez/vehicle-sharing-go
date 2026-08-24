@@ -91,6 +91,7 @@ func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.
 
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
+		return
 	}
 	w.WriteHeader(http.StatusCreated)
 }
