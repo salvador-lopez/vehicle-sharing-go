@@ -2,7 +2,7 @@
   <configuration default="false" name="rest-api-goa" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="inventory/vehicles">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="run" />
+    <parameters value="-server-library=goa" />
     <kind value="PACKAGE" />
     <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/rest-api" />
     <directory value="$PROJECT_DIR$" />
