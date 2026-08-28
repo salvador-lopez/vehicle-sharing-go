@@ -2,7 +2,6 @@ package gorm
 
 import (
 	"context"
-
 	"vehicle-sharing-go/pkg/database/gorm/model"
 	"vehicle-sharing-go/pkg/domain/event"
 )
@@ -16,9 +15,9 @@ func NewOutboxRepository(conn *Connection) *OutboxRepository {
 }
 
 func (o *OutboxRepository) Publish(ctx context.Context, events []*event.Event) error {
-	var outboxRecords []*model.OutboxRecord
+	var records []*model.OutboxRecord
 	for _, evt := range events {
-		outboxRecords = append(outboxRecords, &model.OutboxRecord{
+		records = append(records, &model.OutboxRecord{
 			ID:            evt.ID,
 			CreatedAt:     evt.Timestamp,
 			EventType:     evt.EventType,
@@ -28,5 +27,34 @@ func (o *OutboxRepository) Publish(ctx context.Context, events []*event.Event) e
 		})
 	}
 
-	return o.conn.Db().WithContext(ctx).Create(outboxRecords).Error
+	return o.conn.Db().WithContext(ctx).Create(records).Error
+}
+
+func (o *OutboxRepository) Poll(ctx context.Context, limit int) ([]*event.Event, error) {
+	var records []*model.OutboxRecord
+
+	err := o.conn.Db().
+		WithContext(ctx).
+		Where("published_at IS NOT NULL").
+		Order("created_at ASC").
+		Limit(limit).
+		Find(&records).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var events []*event.Event
+	for _, r := range records {
+		events = append(events, &event.Event{
+			ID:            r.ID,
+			Timestamp:     r.CreatedAt,
+			EventType:     r.EventType,
+			AggregateType: r.AggregateType,
+			AggregateID:   r.AggregateID,
+			Payload:       r.Payload,
+		})
+	}
+
+	return events, nil
 }

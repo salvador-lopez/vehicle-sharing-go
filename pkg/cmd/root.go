@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/viper"
+	"log"
 )
 
 type Config struct {
@@ -25,7 +23,9 @@ func InitConfig(cfg *Config) {
 
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
 	}
+
+	log.Printf("Using config file: %s", viper.ConfigFileUsed())
 }

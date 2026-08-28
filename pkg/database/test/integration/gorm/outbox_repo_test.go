@@ -18,7 +18,7 @@ import (
 
 type outboxRepoIntegrationSuite struct {
 	DatabaseSuite
-	evtID      uuid.UUID
+	evtIDs     []uuid.UUID
 	appID      string
 	kafkaTopic string
 	sut        *gorm.OutboxRepository
@@ -27,7 +27,6 @@ type outboxRepoIntegrationSuite struct {
 func (s *outboxRepoIntegrationSuite) SetupSuite() {
 	s.DatabaseSuite.SetupSuite()
 	s.initDb()
-	s.evtID = uuid.New()
 	s.sut = gorm.NewOutboxRepository(s.Conn())
 }
 
@@ -36,7 +35,7 @@ func (s *outboxRepoIntegrationSuite) initDb() {
 }
 
 func (s *outboxRepoIntegrationSuite) TearDownTest() {
-	s.Conn().Db().Delete(&model.OutboxRecord{}, s.evtID)
+	s.Require().NoError(s.Conn().Db().Where("id IN ?", s.evtIDs).Delete(&model.OutboxRecord{}).Error)
 	s.DatabaseSuite.TearDownTest()
 }
 
@@ -45,28 +44,16 @@ func TestOutboxRepoIntegrationSuite(t *testing.T) {
 }
 
 func (s *outboxRepoIntegrationSuite) TestPublish() {
-	now := time.Now()
+	evtId := uuid.New()
 
 	var events []*event.Event
-	evtPayload := &CarCreatedPayload{
-		VinNumber: "4Y1SL65848Z411439",
-		Color:     "Spectral Blue",
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-	carCreatedEvent := &event.Event{
-		ID:            s.evtID,
-		AggregateID:   uuid.New(),
-		AggregateType: "Car",
-		EventType:     "CarCreatedEvent",
-		Payload:       evtPayload,
-		Timestamp:     now,
-	}
+	evtPayload := s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue")
+	carCreatedEvent := s.buildCarCreatedEvent(evtId, evtPayload)
 	events = append(events, carCreatedEvent)
 	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
 
 	var outboxRecordStored *model.OutboxRecord
-	s.Conn().Db().First(&outboxRecordStored, s.evtID)
+	s.Conn().Db().First(&outboxRecordStored, evtId)
 	s.Require().NotNil(outboxRecordStored)
 
 	s.Require().Equal(carCreatedEvent.AggregateID, outboxRecordStored.AggregateID)
@@ -82,6 +69,57 @@ func (s *outboxRepoIntegrationSuite) TestPublish() {
 	RequireEqualDates(evtPayload.UpdatedAt, evtPayloadFound.UpdatedAt, s.Require())
 
 	RequireEqualDates(carCreatedEvent.Timestamp, outboxRecordStored.CreatedAt, s.Require())
+
+	// This should be nil because the outbox repo is only storing the record in database but not publishing to messaging system
+	s.Require().Nil(outboxRecordStored.PublishedAt)
+}
+
+func (s *outboxRepoIntegrationSuite) TestPoll() {
+	var events []*event.Event
+
+	anEvent := s.buildCarCreatedEvent(
+		uuid.New(),
+		s.buildCarCreatedEventPayload("4Y1SL65848Z411439", "Spectral Blue"),
+	)
+	anotherEvent := s.buildCarCreatedEvent(
+		uuid.New(),
+		s.buildCarCreatedEventPayload("6Y1SL65848D411438", "Black Bullet"),
+	)
+	events = append(events, anEvent)
+	events = append(events, anotherEvent)
+	s.Require().NoError(s.sut.Publish(s.Ctx(), events))
+
+	polledEvts, err := s.sut.Poll(s.Ctx(), len(events))
+	s.Require().NoError(err)
+	s.Require().Len(polledEvts, 2)
+
+	polledEvts, err = s.sut.Poll(s.Ctx(), len(events))
+	s.Require().NoError(err)
+	s.Require().Empty(polledEvts)
+}
+
+func (s *outboxRepoIntegrationSuite) buildCarCreatedEventPayload(vinNumber, color string) *CarCreatedPayload {
+	now := time.Now()
+	return &CarCreatedPayload{
+		VinNumber: vinNumber,
+		Color:     color,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func (s *outboxRepoIntegrationSuite) buildCarCreatedEvent(id uuid.UUID, payload *CarCreatedPayload) *event.Event {
+	carCreatedEvent := &event.Event{
+		ID:            id,
+		AggregateID:   uuid.New(),
+		AggregateType: "Car",
+		EventType:     "CarCreatedEvent",
+		Payload:       payload,
+		Timestamp:     time.Now(),
+	}
+	s.evtIDs = append(s.evtIDs, carCreatedEvent.ID)
+
+	return carCreatedEvent
 }
 
 func toTimeHookFunc() mapstructure.DecodeHookFunc {

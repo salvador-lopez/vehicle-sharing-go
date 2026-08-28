@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="run" />
     <kind value="PACKAGE" />
-    <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay" />
+    <package value="vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay-binlog" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <method v="2" />

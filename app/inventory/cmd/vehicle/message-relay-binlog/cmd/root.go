@@ -10,8 +10,8 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "inventory-domain-event-consumer",
-	Short: "Read events from the inventory-vehicles kafka topic and forward them to to the proper message handlers",
+	Use:   "inventory-message-relay-binlog",
+	Short: "Read events about an outbox table from MySQL binlog, write them on Kafka preserving order. Persist state on Redis.",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -25,6 +25,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(func() {
-		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/domain-event-consumer/cmd", "consumer"))
+		cmd.InitConfig(cmd.NewConfigYaml("./app/inventory/cmd/vehicle/message-relay-binlog/cmd", "message-relay"))
 	})
 }

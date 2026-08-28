@@ -7,11 +7,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
+	"strings"
 	"syscall"
 	"time"
 
 	vehiclemodel "vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm/model"
+
+	"github.com/spf13/viper"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 
@@ -24,42 +26,72 @@ import (
 	"vehicle-sharing-go/app/inventory/internal/vehicle/projection"
 )
 
+type KafkaConfig struct {
+	Brokers []string
+	GroupId string
+	Topics  []string
+}
+
+type DbConfig struct {
+	Conn DbConn
+	Name string
+}
+
+type DbConn struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+}
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the consumer",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Create channel used by both the signal handler and server goroutines
-		// to notify the main goroutine when to stop the server.
 		errc := make(chan error)
 
-		// Setup interrupt handler. This optional step configures the process so
-		// that SIGINT and SIGTERM signals cause the services to stop gracefully.
+		// Graceful shutdown
 		go func() {
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 			errc <- fmt.Errorf("%s", <-c)
 		}()
 
-		var wg sync.WaitGroup
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-		c, err := kafka.NewConsumer(&kafka.ConfigMap{
-			"bootstrap.servers":     "localhost:19092",
-			"broker.address.family": "v4",
-			"group.id":              "inventory-vehicles",
-			"auto.offset.reset":     "earliest",
-		})
-
-		// Setup logger. Replace logger with your own log package of choice.
 		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
 
+		var kafkaCfg KafkaConfig
+		err := viper.UnmarshalKey("kafka", &kafkaCfg)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		c, err := kafka.NewConsumer(&kafka.ConfigMap{
+			"bootstrap.servers":     strings.Join(kafkaCfg.Brokers, ","),
+			"broker.address.family": "v4",
+			"group.id":              kafkaCfg.GroupId,
+			"auto.offset.reset":     "earliest",
+		})
+		if err != nil {
+			logger.Fatalf("failed to create kafka consumer: %v", err)
+		}
+		defer c.Close()
+
+		var dbCfg DbConfig
+		err = viper.UnmarshalKey("db", &dbCfg)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		connCfg := dbCfg.Conn
 		dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
-			UserName:     "inventory",
-			Password:     "inventory",
-			DatabaseName: "inventory",
-			Host:         "localhost",
-			Port:         3308,
+			Host:         connCfg.Host,
+			Port:         connCfg.Port,
+			UserName:     connCfg.User,
+			Password:     connCfg.Password,
+			DatabaseName: dbCfg.Name,
 			Logger:       logger,
 			LogQueries:   false,
 		})
@@ -76,61 +108,55 @@ var runCmd = &cobra.Command{
 
 		carProjector := projection.NewCarProjector(vinDecoderFake{}, carRepo)
 
+		err = c.SubscribeTopics(kafkaCfg.Topics, nil)
 		if err != nil {
-			panic(err)
-		}
-
-		defer c.Close()
-
-		err = c.SubscribeTopics([]string{"inventory-vehicles-car"}, nil)
-		if err != nil {
-			panic(err)
+			logger.Fatalf("failed to subscribe to kafka topics: %v", err)
 		}
 
 		go func() {
 			for {
-				msg, err := c.ReadMessage(time.Second)
-				if err == nil {
-					logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
+				select {
+				case <-ctx.Done():
+					logger.Println("Context cancelled, stopping consumer loop")
+					return
+				default:
+					msg, err := c.ReadMessage(time.Second)
+					if err == nil {
+						logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
 
-					aggregateID, err := uuid.Parse(string(msg.Key))
-					if err != nil {
-						logger.Printf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+						aggregateID, err := uuid.Parse(string(msg.Key))
+						if err != nil {
+							logger.Printf("Error Unmarshalling message aggregateID: %v (%v)\n", err, msg)
+							errc <- err
+						}
+
+						var payload event.CarCreatedPayload
+						err = json.Unmarshal(msg.Value, &payload)
+						if err != nil {
+							logger.Printf("Error Unmarshalling message: %v (%v)\n", err, msg)
+							errc <- err
+						}
+
+						err = carProjector.ProjectCarCreated(ctx, aggregateID, &payload)
+						if err != nil {
+							logger.Printf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
+							errc <- err
+						}
+					} else if !err.(kafka.Error).IsTimeout() {
+						// The client will automatically try to recover from all errors.
+						// Timeout is not considered an error because it is raised by
+						// ReadMessage in absence of messages.
+						logger.Printf("Consumer error: %v (%v)\n", err, msg)
 						errc <- err
 					}
-
-					var payload *event.CarCreatedPayload
-					err = json.Unmarshal(msg.Value, &payload)
-					if err != nil {
-						logger.Printf("Error Unmarshalling message: %v (%v)\n", err, msg)
-						errc <- err
-					}
-
-					err = carProjector.ProjectCarCreated(ctx, aggregateID, payload)
-					if err != nil {
-						logger.Printf("Error Projecting Event %s: %v (%v)\n", aggregateID, err, payload)
-						errc <- err
-					}
-				} else if !err.(kafka.Error).IsTimeout() {
-					// The client will automatically try to recover from all errors.
-					// Timeout is not considered an error because it is raised by
-					// ReadMessage in absence of messages.
-					logger.Printf("Consumer error: %v (%v)\n", err, msg)
-					errc <- err
 				}
 			}
 		}()
 
 		logger.Println("Consumer started successfully")
 
-		// Wait for signal.
+		// Wait for error signal.
 		logger.Printf("exiting (%v)", <-errc)
-
-		// Send cancellation signal to the goroutines.
-		cancel()
-
-		wg.Wait()
-		logger.Println("exited")
 
 		return nil
 	},
