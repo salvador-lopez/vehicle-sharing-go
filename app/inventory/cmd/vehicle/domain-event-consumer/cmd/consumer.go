@@ -44,15 +44,18 @@ var runCmd = &cobra.Command{
 		var wg sync.WaitGroup
 		ctx, cancel := context.WithCancel(context.Background())
 
+		// Setup logger. Replace logger with your own log package of choice.
+		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
+
 		c, err := kafka.NewConsumer(&kafka.ConfigMap{
 			"bootstrap.servers":     "localhost:19092",
 			"broker.address.family": "v4",
 			"group.id":              "inventory-vehicles",
 			"auto.offset.reset":     "earliest",
 		})
-
-		// Setup logger. Replace logger with your own log package of choice.
-		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
+		if err != nil {
+			logger.Fatalf("failed to create kafka consumer: %v", err)
+		}
 
 		dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
 			UserName:     "inventory",
