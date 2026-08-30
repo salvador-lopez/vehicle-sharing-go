@@ -1,0 +1,11 @@
+kafkaBrokers:
+  - "localhost:19092"
+
+kafkaTopic: "inventory-vehicles-car"
+kafkaGroupId: "inventory-vehicles"
+
+dbHost: "localhost"
+dbPort: 3308
+dbUser: "inventory"
+dbPassword: "inventory"
+dbName: "inventory"

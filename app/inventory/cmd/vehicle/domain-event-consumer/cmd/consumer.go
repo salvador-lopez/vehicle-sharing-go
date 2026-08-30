@@ -18,6 +18,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
@@ -48,9 +49,9 @@ var runCmd = &cobra.Command{
 		logger := log.New(os.Stderr, "[inventory-vehicles-domain-event-consumer] ", log.Ltime)
 
 		c, err := kafka.NewConsumer(&kafka.ConfigMap{
-			"bootstrap.servers":     "localhost:19092",
+			"bootstrap.servers":     viper.GetStringSlice("kafkaBrokers")[0],
 			"broker.address.family": "v4",
-			"group.id":              "inventory-vehicles",
+			"group.id":              viper.GetString("kafkaGroupId"),
 			"auto.offset.reset":     "earliest",
 		})
 		if err != nil {
@@ -58,11 +59,11 @@ var runCmd = &cobra.Command{
 		}
 
 		dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
-			UserName:     "inventory",
-			Password:     "inventory",
-			DatabaseName: "inventory",
-			Host:         "localhost",
-			Port:         3308,
+			UserName:     viper.GetString("dbUser"),
+			Password:     viper.GetString("dbPassword"),
+			DatabaseName: viper.GetString("dbName"),
+			Host:         viper.GetString("dbHost"),
+			Port:         viper.GetInt("dbPort"),
 			Logger:       logger,
 			LogQueries:   false,
 		})
@@ -81,7 +82,7 @@ var runCmd = &cobra.Command{
 
 		defer c.Close()
 
-		err = c.SubscribeTopics([]string{"inventory-vehicles-car"}, nil)
+		err = c.SubscribeTopics([]string{viper.GetString("kafkaTopic")}, nil)
 		if err != nil {
 			logger.Fatalf("failed to subscribe to topics: %v", err)
 		}
