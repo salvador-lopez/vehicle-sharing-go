@@ -79,19 +79,21 @@ var runCmd = &cobra.Command{
 
 		carProjector := projection.NewCarProjector(vinDecoderFake{}, carRepo)
 
-		if err != nil {
-			panic(err)
-		}
-
 		defer c.Close()
 
 		err = c.SubscribeTopics([]string{"inventory-vehicles-car"}, nil)
 		if err != nil {
-			panic(err)
+			logger.Fatalf("failed to subscribe to topics: %v", err)
 		}
 
-		go func() {
+		wg.Go(func() {
 			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
 				msg, err := c.ReadMessage(time.Second)
 				if err == nil {
 					logger.Printf("Message on %s with AggregateID %s: %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
@@ -122,7 +124,7 @@ var runCmd = &cobra.Command{
 					errc <- err
 				}
 			}
-		}()
+		})
 
 		logger.Println("Consumer started successfully")
 
