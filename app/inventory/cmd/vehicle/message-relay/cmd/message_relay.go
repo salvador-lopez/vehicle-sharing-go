@@ -9,12 +9,14 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/go-mysql-org/go-mysql/canal"
 	"github.com/go-redis/redis/v8"
-	"github.com/lorenzoranucci/tor/adapters/kafka"
-	redisadapter "github.com/lorenzoranucci/tor/adapters/redis"
-	"github.com/lorenzoranucci/tor/router/pkg/run"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/dispatcher/kafka"
+	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/relay"
+	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog"
+	binlogredis "vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog/redis"
 )
 
 type KafkaTopic struct {
@@ -45,7 +47,7 @@ var runCmd = &cobra.Command{
 		}
 
 		stateHandler := getRedisStateHandler()
-		handler, err := run.NewEventHandler(
+		handler, posCh, err := relay.NewEventHandler(
 			ed,
 			viper.GetString("dbAggregateIDColumnName"),
 			viper.GetString("dbAggregateTypeColumnName"),
@@ -55,9 +57,8 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		runner := run.NewRunner(c, handler, stateHandler, time.Second*5)
-
-		return runner.Run()
+		source := binlog.NewSource(c, handler, posCh, stateHandler, time.Second*5)
+		return relay.NewRunner(source).Run()
 	},
 }
 
@@ -65,7 +66,7 @@ func init() {
 	viper.AutomaticEnv()
 	viper.SetDefault("includeTransactionTimestamp", true)
 
-	// Configure logrus for tor/router
+	// Configure logrus for relay logging.
 	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
@@ -85,8 +86,7 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 	}
 
 	var kafkaTopics []KafkaTopic
-	err = viper.UnmarshalKey("kafkaTopics", &kafkaTopics)
-	if err != nil {
+	if err = viper.UnmarshalKey("kafkaTopics", &kafkaTopics); err != nil {
 		return nil, err
 	}
 
@@ -103,8 +103,7 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 	}
 
 	var kafkaHeaderMappings []kafka.HeaderMapping
-	err = viper.UnmarshalKey("kafkaHeaderMappings", &kafkaHeaderMappings)
-	if err != nil {
+	if err = viper.UnmarshalKey("kafkaHeaderMappings", &kafkaHeaderMappings); err != nil {
 		return nil, err
 	}
 
@@ -118,16 +117,11 @@ func getKafkaSyncProducer() (sarama.SyncProducer, error) {
 	config.Producer.Return.Successes = true
 	config.Metadata.AllowAutoTopicCreation = false
 
-	producer, err := sarama.NewSyncProducer(viper.GetStringSlice("kafkaBrokers"), config)
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, err
+	return sarama.NewSyncProducer(viper.GetStringSlice("kafkaBrokers"), config)
 }
 
-func getRedisStateHandler() *redisadapter.StateHandler {
-	return redisadapter.NewStateHandler(
+func getRedisStateHandler() *binlogredis.StateHandler {
+	return binlogredis.NewStateHandler(
 		redis.NewClient(&redis.Options{
 			Addr: fmt.Sprintf("%s:%s", viper.GetString("redisHost"), viper.GetString("redisPort")),
 			DB:   viper.GetInt("redisDB"),
