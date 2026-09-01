@@ -1,6 +1,6 @@
 //go:build unit
 
-package binlog_test
+package mysql_test
 
 import (
 	"errors"
@@ -12,8 +12,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog"
-	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog/mock"
+	binlogmysql "vehicle-sharing-go/pkg/message-relay/source/binlog/mysql"
+	"vehicle-sharing-go/pkg/message-relay/source/binlog/mysql/mock"
 )
 
 // stubEventHandler is a minimal canal.EventHandler test double.
@@ -65,7 +65,7 @@ func (s *mySQLSourceSuite) TearDownTest() {
 func (s *mySQLSourceSuite) TestNewSourceRegistersEventHandlerOnCanal() {
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
 
-	binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Second)
+	binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Second)
 }
 
 // --- Run: error paths ---
@@ -74,7 +74,7 @@ func (s *mySQLSourceSuite) TestRunReturnsGetLastPositionError() {
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
 	s.mockStateHandler.EXPECT().GetLastPosition().Return(mysql.Position{}, errors.New("redis unavailable"))
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.EqualError(sut.Run(), "redis unavailable")
 }
 
@@ -85,7 +85,7 @@ func (s *mySQLSourceSuite) TestRunReturnsRunFromError() {
 	s.mockCanal.EXPECT().Close()
 	s.mockStateHandler.EXPECT().SetLastPosition(mysql.Position{}).Return(nil)
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.EqualError(sut.Run(), "binlog stream broken")
 }
 
@@ -99,7 +99,7 @@ func (s *mySQLSourceSuite) TestRunCallsRunFromWithLastCheckpointedPosition() {
 	s.mockCanal.EXPECT().Close()
 	s.mockStateHandler.EXPECT().SetLastPosition(lastPos).Return(nil)
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.NoError(sut.Run())
 }
 
@@ -109,7 +109,7 @@ func (s *mySQLSourceSuite) TestCloseCallsCanalClose() {
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
 	s.mockCanal.EXPECT().Close()
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Second)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Second)
 	sut.Close()
 }
 
@@ -129,7 +129,7 @@ func (s *mySQLSourceSuite) TestRunUpdatesLastPositionFromPositionChan() {
 	// The ctx.Done final checkpoint must use the updated position, not the initial empty one.
 	s.mockStateHandler.EXPECT().SetLastPosition(newPos).Return(nil)
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 
 	done := make(chan error)
 	go func() { done <- sut.Run() }()
@@ -164,6 +164,6 @@ func (s *mySQLSourceSuite) TestRunReturnsCheckpointErrorOnTick() {
 	s.mockCanal.EXPECT().Close().DoAndReturn(func() { close(canClose) })
 	s.mockStateHandler.EXPECT().SetLastPosition(mysql.Position{}).Return(checkpointErr)
 
-	sut := binlog.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, 5*time.Millisecond)
+	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, 5*time.Millisecond)
 	s.ErrorIs(sut.Run(), checkpointErr)
 }

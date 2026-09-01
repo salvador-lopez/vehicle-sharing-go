@@ -15,7 +15,7 @@ import (
 
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/dispatcher/kafka"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/relay"
-	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog"
+	binlogmysql "vehicle-sharing-go/pkg/message-relay/source/binlog/mysql"
 	binlogredis "vehicle-sharing-go/pkg/message-relay/source/binlog/redis"
 )
 
@@ -57,7 +57,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		source := binlog.NewSource(c, handler, posCh, stateHandler, time.Second*5)
+		source := binlogmysql.NewSource(c, handler, posCh, stateHandler, time.Second*5)
 		return relay.NewRunner(source).Run()
 	},
 }

@@ -1,4 +1,4 @@
-package binlog
+package mysql
 
 import (
 	"context"
