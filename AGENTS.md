@@ -18,7 +18,11 @@ All development **must** follow a strict Red → Green → Refactor cycle. Never
 
 ## Testing Strategy by Package
 
-The project follows a layered architecture under `internal/vehicle/`. Each layer has a dedicated testing approach:
+The project is organized by application contexts under `app/` (one app per context, e.g. `inventory`) and shared reusable packages under `pkg/` (e.g. `database`, `domain`, `message-relay`). Each layer has a dedicated testing approach:
+
+### Coverage Enforcement for Existing Code
+- When adding or updating tests for existing production code, run the relevant test command with coverage enabled (e.g. `go test ./... -cover` or a package-scoped equivalent with `-cover`).
+- 100% coverage remains mandatory for the impacted `command/` and `projection/` packages. Do not consider the task done until coverage confirms this threshold.
 
 ### `command/`
 - **Coverage target: 100% unit tests.**
@@ -40,7 +44,6 @@ The project follows a layered architecture under `internal/vehicle/`. Each layer
 ### `database/`
 - Holds persistence implementations (repositories, etc.).
 - **Covered by integration tests** that exercise a real (or containerised) database.
-- Integration tests live in `test/integration/`.
 - Unit-test only when a piece of logic is clearly independent of the database (e.g. pure query-building helpers).
 
 ### `handler/`
@@ -48,3 +51,12 @@ The project follows a layered architecture under `internal/vehicle/`. Each layer
 - **Covered by unit tests** that mock the underlying use-case/command/projection dependencies.
 - E2E tests may be added in the future but are not required today.
 - Test files live alongside the production code (e.g. `handler/create_vehicle_handler_test.go`).
+
+## Integration Tests Policy
+
+- Integration tests are mandatory for integration behavior, including but not limited to database persistence and Redis-backed state.
+- Integration tests live in:
+  - `app/{context}/test/integration` (for example, `app/inventory/test/integration`)
+  - `pkg/{name}/test/integration` (for example, `pkg/database/test/integration`, `pkg/domain/test/integration`, `pkg/message-relay/test/integration`)
+- Coverage target for integration tests is **100%** for the impacted integration package/scope.
+- Run integration tests with coverage enabled and do not consider the task complete until the required 100% coverage is confirmed.
