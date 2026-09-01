@@ -49,10 +49,7 @@ func (s *StateHandler) GetLastPosition() (mysql.Position, error) {
 
 // SetLastPosition persists the given binlog position with no TTL.
 func (s *StateHandler) SetLastPosition(p mysql.Position) error {
-	data, err := json.Marshal(binlogPosition{Name: p.Name, Pos: p.Pos})
-	if err != nil {
-		return err
-	}
+	data, _ := json.Marshal(binlogPosition{Name: p.Name, Pos: p.Pos})
 	return s.client.Set(context.Background(), s.keyName, data, 0).Err()
 }
 
