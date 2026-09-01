@@ -13,7 +13,7 @@ import (
 	redisclient "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/suite"
 
-	binlogredis "vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog/redis"
+	binlogredis "vehicle-sharing-go/pkg/message-relay/source/binlog/redis"
 )
 
 type stateHandlerIntegrationSuite struct {

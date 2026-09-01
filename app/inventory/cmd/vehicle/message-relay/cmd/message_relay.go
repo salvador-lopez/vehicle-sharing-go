@@ -16,7 +16,7 @@ import (
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/dispatcher/kafka"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/relay"
 	"vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog"
-	binlogredis "vehicle-sharing-go/app/inventory/cmd/vehicle/message-relay/source/binlog/redis"
+	binlogredis "vehicle-sharing-go/pkg/message-relay/source/binlog/redis"
 )
 
 type KafkaTopic struct {
