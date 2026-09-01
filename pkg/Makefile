@@ -1,6 +1,7 @@
 mysqlUser=inventory
 mysqlPassword=inventory
 mysqlDatabase=inventory
+mysqlMessageRelayDatabase=message_relay_test
 mysqlHost=localhost
 mysqlPort=3308
 
@@ -16,6 +17,7 @@ unit-test: mock-gen
 integration-test: export MYSQL_USER=$(mysqlUser)
 integration-test: export MYSQL_PASSWORD=$(mysqlPassword)
 integration-test: export MYSQL_DATABASE=$(mysqlDatabase)
+integration-test: export MYSQL_MESSAGE_RELAY_DATABASE=$(mysqlMessageRelayDatabase)
 integration-test: export MYSQL_HOST=$(mysqlHost)
 integration-test: export MYSQL_PORT=$(mysqlPort)
 integration-test: mock-gen

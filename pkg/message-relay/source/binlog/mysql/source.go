@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/go-mysql-org/go-mysql/canal"
@@ -33,6 +34,7 @@ type Source struct {
 	stateHandler         StateHandler
 	positionChan         <-chan mysql.Position
 	stateUpdateFrequency time.Duration
+	closeOnce            sync.Once
 }
 
 // NewSource constructs a Source, registering handler on the canal.
@@ -76,7 +78,7 @@ func (s *Source) Run() error {
 	// Actor 1: stream binlog changes from MySQL.
 	g.Add(
 		func() error { return s.canal.RunFrom(startPosition) },
-		func(error) { s.canal.Close() },
+		func(error) { s.Close() },
 	)
 
 	// Actor 2: periodically checkpoint the latest binlog position.
@@ -106,9 +108,13 @@ func (s *Source) Run() error {
 	return g.Run()
 }
 
-// Close closes the underlying canal.
+// Close closes the underlying canal. Safe to call multiple times, and safe
+// to call concurrently with Run: the underlying Canal.Close is not
+// idempotent (calling it twice panics), and Run's own shutdown path also
+// closes the canal whenever it stops, so both paths are guarded by the same
+// sync.Once.
 func (s *Source) Close() {
-	s.canal.Close()
+	s.closeOnce.Do(s.canal.Close)
 }
 
 func (s *Source) checkpoint(p mysql.Position) error {
