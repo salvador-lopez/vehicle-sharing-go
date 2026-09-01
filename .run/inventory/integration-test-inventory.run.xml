@@ -2,7 +2,7 @@
   <configuration default="false" name="integration-test-inventory" type="GoTestRunConfiguration" factoryName="Go Test" folderName="inventory">
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$/app/inventory" />
-    <go_parameters value="-tags=integration" />
+    <go_parameters value="-tags=integration -coverpkg=./..." />
     <framework value="gotest" />
     <kind value="DIRECTORY" />
     <directory value="$PROJECT_DIR$/app/inventory" />

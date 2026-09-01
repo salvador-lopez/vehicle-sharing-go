@@ -9,20 +9,17 @@
   distinct Go module and can't be covered by a single `go test` invocation
   rooted in `app/inventory`.
 - `integration-test` (Compound, project root) — runs both of the above
-  together for a quick full pass/fail across both modules.
+  together, each in its own tab (JetBrains Compound configs run children in
+  parallel, not merged into one process). Supports plain Run, Debug, and
+  Run with Coverage — each child tab shows its own results/coverage.
 
-### Known limitation: Compound + Debug/Coverage
+### Notes
 
-JetBrains Compound run configurations start all child configurations, but
-**do not properly support "Debug" or "Run with Coverage"** — only one child
-process gets instrumented/debugged, so you'll see 0% coverage or only one
-child appearing to execute.
-
-**Use `integration-test` (compound) only for plain Run.**
-
-For **Debug** or **Run with Coverage**, run `integration-test-inventory` and
-`integration-test-pkg` **individually** — each is a standalone Go Test
-configuration and fully supports breakpoints and coverage reporting.
+- Coverage requires `-coverpkg=./...` in each child's Go tool arguments,
+  otherwise coverage is (incorrectly) measured only against the test's own
+  package instead of the production code it exercises, showing as 0%.
+- Debugging via the compound config debugs each child process
+  independently; set breakpoints in the relevant module's code as usual.
 
 Both configs require the local MySQL (`inventory_test` DB) and Redis
 containers to be up (`docker compose up -d` from the repo root).
