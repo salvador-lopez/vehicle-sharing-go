@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="integration-test-pkg" type="GoTestRunConfiguration" factoryName="Go Test" folderName="pkg">
+    <module name="vehicle-sharing-go" />
+    <working_directory value="$PROJECT_DIR$/pkg" />
+    <go_parameters value="-tags=integration" />
+    <framework value="gotest" />
+    <kind value="DIRECTORY" />
+    <directory value="$PROJECT_DIR$/pkg" />
+    <pattern value="^Test" />
+    <recursive value="true" />
+    <envs>
+      <env name="MYSQL_USER" value="inventory" />
+      <env name="MYSQL_PASSWORD" value="inventory" />
+      <env name="MYSQL_DATABASE" value="inventory_test" />
+      <env name="MYSQL_HOST" value="localhost" />
+      <env name="MYSQL_PORT" value="3308" />
+      <env name="CGO_ENABLED" value="1" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

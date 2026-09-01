@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="integration-test" type="CompoundRunConfigurationType">
+    <toRun name="integration-test-inventory" type="GoTestRunConfiguration" />
+    <toRun name="integration-test-pkg" type="GoTestRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>
