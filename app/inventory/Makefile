@@ -1,6 +1,6 @@
 mysqlUser=inventory
 mysqlPassword=inventory
-mysqlDatabase=inventory
+mysqlDatabase=inventory_test
 mysqlHost=localhost
 mysqlPort=3308
 
