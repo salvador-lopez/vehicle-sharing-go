@@ -3,11 +3,6 @@
     <module name="vehicle-sharing-go" />
     <working_directory value="$PROJECT_DIR$/app/inventory" />
     <go_parameters value="-tags=integration -coverpkg=./..." />
-    <framework value="gotest" />
-    <kind value="DIRECTORY" />
-    <directory value="$PROJECT_DIR$/app/inventory" />
-    <pattern value="^Test" />
-    <recursive value="true" />
     <envs>
       <env name="MYSQL_USER" value="inventory" />
       <env name="MYSQL_PASSWORD" value="inventory" />
@@ -16,6 +11,11 @@
       <env name="MYSQL_PORT" value="3308" />
       <env name="CGO_ENABLED" value="1" />
     </envs>
+    <kind value="DIRECTORY" />
+    <package value="vehicle-sharing-go/app/inventory" />
+    <directory value="$PROJECT_DIR$/app/inventory" />
+    <framework value="gotest" />
+    <pattern value="^Test" />
     <method v="2" />
   </configuration>
 </component>

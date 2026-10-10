@@ -1,7 +1,5 @@
 package relay
 
-import okrun "github.com/oklog/run"
-
 // Source is the relay backend interface. Implementations stream events from a
 // source (e.g. MySQL binlog, database polling) and handle their own
 // checkpointing. Swap the implementation to change the relay strategy without
@@ -11,8 +9,8 @@ type Source interface {
 	Close()
 }
 
-// Runner manages the lifecycle of a Source. It guarantees Close is always
-// called when Run stops, regardless of whether it succeeds or fails.
+// Runner manages the lifecycle of a Source. It guarantees Close is called
+// when Run returns or panics.
 type Runner struct {
 	source Source
 }
@@ -24,10 +22,6 @@ func NewRunner(source Source) *Runner {
 
 // Run starts the source and blocks until it stops, then calls Close.
 func (r *Runner) Run() error {
-	var g okrun.Group
-	g.Add(
-		func() error { return r.source.Run() },
-		func(error) { r.source.Close() },
-	)
-	return g.Run()
+	defer r.source.Close()
+	return r.source.Run()
 }

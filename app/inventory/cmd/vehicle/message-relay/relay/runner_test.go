@@ -22,10 +22,16 @@ func TestRunnerSuite(t *testing.T) {
 // stubSource is a handwritten test double for relay.Source.
 type stubSource struct {
 	runErr      error
+	panicOnRun  bool
 	closeCalled bool
 }
 
-func (s *stubSource) Run() error { return s.runErr }
+func (s *stubSource) Run() error {
+	if s.panicOnRun {
+		panic("source panic")
+	}
+	return s.runErr
+}
 func (s *stubSource) Close()     { s.closeCalled = true }
 
 func (s *runnerSuite) TestRunDelegatesToSource() {
@@ -49,4 +55,13 @@ func (s *runnerSuite) TestRunCallsSourceCloseOnError() {
 	source := &stubSource{runErr: errors.New("source error")}
 	_ = relay.NewRunner(source).Run()
 	s.True(source.closeCalled, "Close must be called even when Run fails")
+}
+
+func (s *runnerSuite) TestRunCallsSourceCloseOnPanic() {
+	source := &stubSource{panicOnRun: true}
+	defer func() {
+		s.Equal("source panic", recover())
+		s.True(source.closeCalled, "Close must be called when Run panics")
+	}()
+	_ = relay.NewRunner(source).Run()
 }
