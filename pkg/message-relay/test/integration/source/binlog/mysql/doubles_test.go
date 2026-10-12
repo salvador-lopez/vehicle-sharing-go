@@ -3,6 +3,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 
 	"github.com/go-mysql-org/go-mysql/canal"
@@ -21,13 +22,13 @@ func newInMemoryStateHandler(initial mysql.Position) *inMemoryStateHandler {
 	return &inMemoryStateHandler{pos: initial}
 }
 
-func (h *inMemoryStateHandler) GetLastPosition() (mysql.Position, error) {
+func (h *inMemoryStateHandler) GetLastPosition(context.Context) (mysql.Position, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.pos, nil
 }
 
-func (h *inMemoryStateHandler) SetLastPosition(pos mysql.Position) error {
+func (h *inMemoryStateHandler) SetLastPosition(_ context.Context, pos mysql.Position) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.pos = pos

@@ -51,7 +51,7 @@ func (s *stateHandlerIntegrationSuite) TearDownSuite() {
 }
 
 func (s *stateHandlerIntegrationSuite) TestGetLastPositionReturnsZeroValueWhenStateIsMissing() {
-	pos, err := s.sut.GetLastPosition()
+	pos, err := s.sut.GetLastPosition(s.ctx)
 
 	s.Require().NoError(err)
 	s.Require().Equal(mysql.Position{}, pos)
@@ -63,9 +63,9 @@ func (s *stateHandlerIntegrationSuite) TestSetLastPositionAndGetLastPositionRoun
 		Pos:  1280,
 	}
 
-	s.Require().NoError(s.sut.SetLastPosition(expected))
+	s.Require().NoError(s.sut.SetLastPosition(s.ctx, expected))
 
-	actual, err := s.sut.GetLastPosition()
+	actual, err := s.sut.GetLastPosition(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
 }
@@ -73,7 +73,7 @@ func (s *stateHandlerIntegrationSuite) TestSetLastPositionAndGetLastPositionRoun
 func (s *stateHandlerIntegrationSuite) TestGetLastPositionReturnsErrorWhenStoredPayloadIsInvalidJSON() {
 	s.Require().NoError(s.client.Set(s.ctx, s.keyName, "not-json", time.Minute).Err())
 
-	_, err := s.sut.GetLastPosition()
+	_, err := s.sut.GetLastPosition(s.ctx)
 
 	s.Require().Error(err)
 }
@@ -81,7 +81,7 @@ func (s *stateHandlerIntegrationSuite) TestGetLastPositionReturnsErrorWhenStored
 func (s *stateHandlerIntegrationSuite) TestGetLastPositionReturnsErrorWhenRedisClientIsUnavailable() {
 	sut := binlogredis.NewStateHandler(s.closedClient(), s.keyName)
 
-	_, err := sut.GetLastPosition()
+	_, err := sut.GetLastPosition(s.ctx)
 
 	s.Require().Error(err)
 }
@@ -89,7 +89,7 @@ func (s *stateHandlerIntegrationSuite) TestGetLastPositionReturnsErrorWhenRedisC
 func (s *stateHandlerIntegrationSuite) TestSetLastPositionReturnsErrorWhenRedisClientIsUnavailable() {
 	sut := binlogredis.NewStateHandler(s.closedClient(), s.keyName)
 
-	err := sut.SetLastPosition(mysql.Position{Name: "mysql-bin.000007", Pos: 1280})
+	err := sut.SetLastPosition(s.ctx, mysql.Position{Name: "mysql-bin.000007", Pos: 1280})
 
 	s.Require().Error(err)
 }

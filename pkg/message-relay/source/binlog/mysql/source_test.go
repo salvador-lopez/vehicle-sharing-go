@@ -72,7 +72,7 @@ func (s *mySQLSourceSuite) TestNewSourceRegistersEventHandlerOnCanal() {
 
 func (s *mySQLSourceSuite) TestRunReturnsGetLastPositionError() {
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
-	s.mockStateHandler.EXPECT().GetLastPosition().Return(mysql.Position{}, errors.New("redis unavailable"))
+	s.mockStateHandler.EXPECT().GetLastPosition(gomock.Any()).Return(mysql.Position{}, errors.New("redis unavailable"))
 
 	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.EqualError(sut.Run(), "redis unavailable")
@@ -80,10 +80,10 @@ func (s *mySQLSourceSuite) TestRunReturnsGetLastPositionError() {
 
 func (s *mySQLSourceSuite) TestRunReturnsRunFromError() {
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
-	s.mockStateHandler.EXPECT().GetLastPosition().Return(mysql.Position{}, nil)
+	s.mockStateHandler.EXPECT().GetLastPosition(gomock.Any()).Return(mysql.Position{}, nil)
 	s.mockCanal.EXPECT().RunFrom(mysql.Position{}).Return(errors.New("binlog stream broken"))
 	s.mockCanal.EXPECT().Close()
-	s.mockStateHandler.EXPECT().SetLastPosition(mysql.Position{}).Return(nil)
+	s.mockStateHandler.EXPECT().SetLastPosition(gomock.Any(), mysql.Position{}).Return(nil)
 
 	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.EqualError(sut.Run(), "binlog stream broken")
@@ -94,10 +94,10 @@ func (s *mySQLSourceSuite) TestRunReturnsRunFromError() {
 func (s *mySQLSourceSuite) TestRunCallsRunFromWithLastCheckpointedPosition() {
 	lastPos := mysql.Position{Name: "binlog.000003", Pos: 1024}
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
-	s.mockStateHandler.EXPECT().GetLastPosition().Return(lastPos, nil)
+	s.mockStateHandler.EXPECT().GetLastPosition(gomock.Any()).Return(lastPos, nil)
 	s.mockCanal.EXPECT().RunFrom(lastPos).Return(nil)
 	s.mockCanal.EXPECT().Close()
-	s.mockStateHandler.EXPECT().SetLastPosition(lastPos).Return(nil)
+	s.mockStateHandler.EXPECT().SetLastPosition(gomock.Any(), lastPos).Return(nil)
 
 	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 	s.NoError(sut.Run())
@@ -120,14 +120,14 @@ func (s *mySQLSourceSuite) TestRunUpdatesLastPositionFromPositionChan() {
 	canClose := make(chan struct{})
 
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
-	s.mockStateHandler.EXPECT().GetLastPosition().Return(mysql.Position{}, nil)
+	s.mockStateHandler.EXPECT().GetLastPosition(gomock.Any()).Return(mysql.Position{}, nil)
 	s.mockCanal.EXPECT().RunFrom(mysql.Position{}).DoAndReturn(func(mysql.Position) error {
 		<-canClose
 		return nil
 	})
 	s.mockCanal.EXPECT().Close()
 	// The ctx.Done final checkpoint must use the updated position, not the initial empty one.
-	s.mockStateHandler.EXPECT().SetLastPosition(newPos).Return(nil)
+	s.mockStateHandler.EXPECT().SetLastPosition(gomock.Any(), newPos).Return(nil)
 
 	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, time.Hour)
 
@@ -154,7 +154,7 @@ func (s *mySQLSourceSuite) TestRunReturnsCheckpointErrorOnTick() {
 	checkpointErr := errors.New("checkpoint failed")
 
 	s.mockCanal.EXPECT().SetEventHandler(s.handler)
-	s.mockStateHandler.EXPECT().GetLastPosition().Return(mysql.Position{}, nil)
+	s.mockStateHandler.EXPECT().GetLastPosition(gomock.Any()).Return(mysql.Position{}, nil)
 	s.mockCanal.EXPECT().RunFrom(mysql.Position{}).DoAndReturn(func(mysql.Position) error {
 		<-canClose
 		return nil
@@ -162,7 +162,7 @@ func (s *mySQLSourceSuite) TestRunReturnsCheckpointErrorOnTick() {
 	// When Actor 2 returns an error, okrun calls canal.Close() as the Actor 1 interrupt.
 	// That interrupt must unblock RunFrom so the goroutine can exit cleanly.
 	s.mockCanal.EXPECT().Close().DoAndReturn(func() { close(canClose) })
-	s.mockStateHandler.EXPECT().SetLastPosition(mysql.Position{}).Return(checkpointErr)
+	s.mockStateHandler.EXPECT().SetLastPosition(gomock.Any(), mysql.Position{}).Return(checkpointErr)
 
 	sut := binlogmysql.NewSource(s.mockCanal, s.handler, s.posCh, s.mockStateHandler, 5*time.Millisecond)
 	s.ErrorIs(sut.Run(), checkpointErr)

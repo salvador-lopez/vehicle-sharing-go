@@ -22,8 +22,8 @@ type Canal interface {
 
 //go:generate mockgen -destination=mock/state_handler_mock.go -package=mock . StateHandler
 type StateHandler interface {
-	GetLastPosition() (mysql.Position, error)
-	SetLastPosition(position mysql.Position) error
+	GetLastPosition(ctx context.Context) (mysql.Position, error)
+	SetLastPosition(ctx context.Context, position mysql.Position) error
 }
 
 // Source implements relay.Source by streaming MySQL binlog changes via a Canal.
@@ -61,12 +61,14 @@ func NewSource(
 // until either the canal stream or the checkpoint ticker exits, then stops
 // both and returns the first error.
 func (s *Source) Run() error {
-	lastPosition, err := s.stateHandler.GetLastPosition()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	lastPosition, err := s.stateHandler.GetLastPosition(ctx)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	ticker := time.NewTicker(s.stateUpdateFrequency)
 
 	// startPosition is the fixed resume point passed to RunFrom. lastPosition
@@ -89,12 +91,12 @@ func (s *Source) Run() error {
 				case pos := <-s.positionChan:
 					lastPosition = pos
 				case <-ticker.C:
-					if err := s.checkpoint(lastPosition); err != nil {
+					if err := s.checkpoint(ctx, lastPosition); err != nil {
 						return err
 					}
 				case <-ctx.Done():
 					// Final checkpoint before exit.
-					_ = s.checkpoint(lastPosition)
+					_ = s.checkpoint(context.WithoutCancel(ctx), lastPosition)
 					return nil
 				}
 			}
@@ -117,8 +119,8 @@ func (s *Source) Close() {
 	s.closeOnce.Do(s.canal.Close)
 }
 
-func (s *Source) checkpoint(p mysql.Position) error {
-	if err := s.stateHandler.SetLastPosition(p); err != nil {
+func (s *Source) checkpoint(ctx context.Context, p mysql.Position) error {
+	if err := s.stateHandler.SetLastPosition(ctx, p); err != nil {
 		return err
 	}
 	logrus.WithField("position", p).Debug("binlog position checkpointed")
