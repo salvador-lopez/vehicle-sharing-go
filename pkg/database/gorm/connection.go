@@ -4,32 +4,67 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
-	"log"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type Config struct {
-	UserName        string
-	Password        string
-	DatabaseName    string
-	Host            string
-	Port            int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	MaxOpenConns    int
-	Logger          *log.Logger
-	LogQueries      bool
+	MaxIdleConns              int
+	ConnMaxLifetime           time.Duration
+	MaxOpenConns              int
+	LogQueries                bool
+	SkipInitializeWithVersion bool
+}
+
+type DSNConfig struct {
+	UserName     string
+	Password     string
+	DatabaseName string
+	Host         string
+	Port         int
 }
 
 type Connection struct {
-	db     *gorm.DB
-	tx     *gorm.DB
-	logger log.Logger
+	db *gorm.DB
+	tx *gorm.DB
+}
+
+func buildDSN(config DSNConfig) string {
+	return fmt.Sprintf("%s:%s@(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=UTC",
+		config.UserName,
+		config.Password,
+		config.Host,
+		config.Port,
+		config.DatabaseName,
+	)
+}
+
+func NewConnectionFromConfig(connectionConfig *Config, dsnConfig DSNConfig, gormConfig *gorm.Config) (*Connection, error) {
+	db, err := gorm.Open(gormmysql.New(gormmysql.Config{
+		DSN:                       buildDSN(dsnConfig),
+		SkipInitializeWithVersion: connectionConfig.SkipInitializeWithVersion,
+	}), gormConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	if connectionConfig.LogQueries {
+		db = db.Debug()
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxIdleConns(connectionConfig.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(connectionConfig.ConnMaxLifetime)
+	sqlDB.SetMaxOpenConns(connectionConfig.MaxOpenConns)
+
+	return &Connection{db: db}, nil
 }
 
 func (c *Connection) Db() *gorm.DB {
@@ -38,39 +73,6 @@ func (c *Connection) Db() *gorm.DB {
 	}
 
 	return c.db
-}
-
-func NewConnectionFromConfig(c *Config) (*Connection, error) {
-	dsn := fmt.Sprintf(`%s:%s@(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=UTC`,
-		c.UserName,
-		c.Password,
-		c.Host,
-		c.Port,
-		c.DatabaseName,
-	)
-
-	db, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if c.LogQueries {
-		db.Logger = db.Debug().Logger
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-
-	sqlDB.SetMaxIdleConns(c.MaxIdleConns)
-	sqlDB.SetConnMaxLifetime(c.ConnMaxLifetime)
-	sqlDB.SetMaxOpenConns(c.MaxOpenConns)
-
-	return &Connection{db: db}, nil
 }
 
 func (c *Connection) Transaction(ctx context.Context, f func(context.Context) error) error {

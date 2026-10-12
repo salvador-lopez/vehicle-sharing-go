@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 
+	gormdb "gorm.io/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/command"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
@@ -51,15 +52,17 @@ func main() {
 	// Setup logger.
 	logger := log.New(os.Stderr, fmt.Sprintf("[inventory-vehicles-rest-api-%s] ", *serverLibrary), log.Ltime)
 
-	dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
+	dsnConfig := gormpkg.DSNConfig{
 		UserName:     *dbUser,
 		Password:     *dbPwd,
 		DatabaseName: *dbName,
 		Host:         *dbHost,
 		Port:         *dbPort,
-		Logger:       logger,
-		LogQueries:   *dbDebug,
-	})
+	}
+	dbConfig := &gormpkg.Config{
+		LogQueries: *dbDebug,
+	}
+	dbConn, err := gormpkg.NewConnectionFromConfig(dbConfig, dsnConfig, &gormdb.Config{})
 	if err != nil {
 		logger.Fatalf("failed to create db connection: %v", err)
 	}

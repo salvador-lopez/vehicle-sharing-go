@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	gormdb "gorm.io/gorm"
 
 	gormpkg "vehicle-sharing-go/pkg/database/gorm"
 )
@@ -34,16 +35,16 @@ func (s *DatabaseSuite) createDb() {
 	port, err := strconv.Atoi(os.Getenv("MYSQL_PORT"))
 	s.Require().NoError(err)
 
-	conn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
+	dsnConfig := gormpkg.DSNConfig{
 		UserName:     os.Getenv("MYSQL_USER"),
 		Password:     os.Getenv("MYSQL_PASSWORD"),
 		DatabaseName: os.Getenv("MYSQL_DATABASE"),
 		Host:         os.Getenv("MYSQL_HOST"),
 		Port:         port,
-	})
+	}
+	dbConfig := &gormpkg.Config{}
+	s.conn, err = gormpkg.NewConnectionFromConfig(dbConfig, dsnConfig, &gormdb.Config{})
 	s.Require().NoError(err)
-
-	s.conn = conn
 }
 
 func (s *DatabaseSuite) SetupTest() {

@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	gormdb "gorm.io/gorm"
 
 	"vehicle-sharing-go/app/inventory/internal/vehicle/database/gorm"
 	"vehicle-sharing-go/app/inventory/internal/vehicle/domain/event"
@@ -58,15 +59,17 @@ var runCmd = &cobra.Command{
 			logger.Fatalf("failed to create kafka consumer: %v", err)
 		}
 
-		dbConn, err := gormpkg.NewConnectionFromConfig(&gormpkg.Config{
+		dsnConfig := gormpkg.DSNConfig{
 			UserName:     viper.GetString("dbUser"),
 			Password:     viper.GetString("dbPassword"),
 			DatabaseName: viper.GetString("dbName"),
 			Host:         viper.GetString("dbHost"),
 			Port:         viper.GetInt("dbPort"),
-			Logger:       logger,
-			LogQueries:   false,
-		})
+		}
+		dbConfig := &gormpkg.Config{
+			LogQueries: false,
+		}
+		dbConn, err := gormpkg.NewConnectionFromConfig(dbConfig, dsnConfig, &gormdb.Config{})
 		if err != nil {
 			logger.Fatalf("failed to create db connection: %v", err)
 		}
