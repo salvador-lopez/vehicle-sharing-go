@@ -4,6 +4,8 @@ package event_test
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -16,26 +18,15 @@ import (
 )
 
 func TestPublishRecordedEvents(t *testing.T) {
-	var (
-		r           *require.Assertions
-		ctx         context.Context
-		mockCtrl    *gomock.Controller
-		evtRecorder *mock.MockRecorder
-		publisher   *mock.MockPublisher
-		sut         *event.AgRootEventPublisher
-	)
-
-	setup := func() {
-		r = require.New(t)
-		ctx = context.Background()
-		mockCtrl = gomock.NewController(t)
-		evtRecorder = mock.NewMockRecorder(mockCtrl)
-		publisher = mock.NewMockPublisher(mockCtrl)
-		sut = event.NewAgRootEventPublisher(publisher)
-	}
-
-	teardown := func() {
-		mockCtrl.Finish()
+	recordedEvents := []*event.Event{
+		{
+			ID:            uuid.New(),
+			AggregateID:   uuid.New(),
+			AggregateType: "Car",
+			EventType:     "CarCreatedEvent",
+			Payload:       map[string]string{"vin": "vehicle-123"},
+			Timestamp:     time.Now(),
+		},
 	}
 
 	tests := []struct {
@@ -45,28 +36,39 @@ func TestPublishRecordedEvents(t *testing.T) {
 		expectedErrMsg  string
 	}{
 		{
-			name: "publish successfully",
-			recordedEvents: []*event.Event{
-				{
-					uuid.New(),
-					uuid.New(),
-					"Car",
-					"CarCreatedEvent",
-					nil,
-					time.Now(),
-				},
-			},
+			name:            "preserves publisher error cause",
+			recordedEvents:  recordedEvents,
+			evtPublisherErr: errors.New("outbox unavailable"),
+			expectedErrMsg:  "failed to publish events recorded in the aggregate root, cause: outbox unavailable",
+		},
+		{
+			name:            "publish fails",
+			recordedEvents:  recordedEvents,
+			evtPublisherErr: errors.New("publish error"),
+			expectedErrMsg:  "failed to publish events recorded in the aggregate root, cause: publish error",
+		},
+		{
+			name:           "publish successfully",
+			recordedEvents: recordedEvents,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setup()
-			defer teardown()
+			r := require.New(t)
+			ctx := context.Background()
+			mockCtrl := gomock.NewController(t)
+			evtRecorder := mock.NewMockRecorder(mockCtrl)
+			publisher := mock.NewMockPublisher(mockCtrl)
+			sut := event.NewAgRootEventPublisher(publisher)
+
 			evtRecorder.EXPECT().RecordedEvents().Return(tt.recordedEvents)
 			publisher.EXPECT().Publish(ctx, tt.recordedEvents).Return(tt.evtPublisherErr)
 			err := sut.Publish(ctx, evtRecorder)
 			if tt.expectedErrMsg != "" {
-				r.EqualError(err, tt.expectedErrMsg)
+				r.ErrorIs(err, tt.evtPublisherErr)
+				serializedEvents, marshalErr := json.Marshal(tt.recordedEvents)
+				r.NoError(marshalErr)
+				r.EqualError(err, tt.expectedErrMsg+", events: "+string(serializedEvents))
 				return
 			}
 

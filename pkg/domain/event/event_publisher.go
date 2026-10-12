@@ -33,7 +33,7 @@ func (ep *AgRootEventPublisher) Publish(ctx context.Context, evtRecorder Recorde
 
 	if err != nil {
 		recordedEventsBytes, _ := json.Marshal(recordedEvents)
-		return fmt.Errorf("%w, cause: %v, events: %v", publishEventsErr, errors.New("publish error"), string(recordedEventsBytes))
+		return fmt.Errorf("%w, cause: %w, events: %v", publishEventsErr, err, string(recordedEventsBytes))
 	}
 
 	return err
