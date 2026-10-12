@@ -24,6 +24,13 @@ The project is organized by application contexts under `app/` (one app per conte
 - When adding or updating tests for existing production code, run the relevant test command with coverage enabled (e.g. `go test ./... -cover` or a package-scoped equivalent with `-cover`).
 - 100% coverage remains mandatory for the impacted `command/` and `projection/` packages. Do not consider the task done until coverage confirms this threshold.
 
+### `pkg/`
+- **Unit tests are mandatory for shared libraries under `pkg/`.**
+- Test files live alongside the production code (e.g. `pkg/message-relay/source/binlog/redis/state_test.go`).
+- Mock external dependencies in unit tests so they do not require running databases, caches, or other services.
+- Integration tests are optional for libraries that integrate with databases, caches, or other persistence systems. When added, they exercise the real (or containerised) dependency and complement, rather than replace, unit tests.
+- These rules take precedence over the `domain/` and `database/` guidance below for packages under `pkg/`.
+
 ### `command/`
 - **Coverage target: 100% unit tests.**
 - These packages orchestrate domain logic. Test them with unit tests only.
@@ -54,9 +61,10 @@ The project is organized by application contexts under `app/` (one app per conte
 
 ## Integration Tests Policy
 
-- Integration tests are mandatory for integration behavior, including but not limited to database persistence and Redis-backed state.
+- Integration tests are mandatory for integration behavior under `app/`, including but not limited to database persistence and Redis-backed state.
+- Under `pkg/`, integration tests are optional for libraries that integrate with databases, caches, or other persistence systems; unit tests remain mandatory.
 - Integration tests live in:
   - `app/{context}/test/integration` (for example, `app/inventory/test/integration`)
   - `pkg/{name}/test/integration` (for example, `pkg/database/test/integration`, `pkg/domain/test/integration`, `pkg/message-relay/test/integration`)
 - Coverage target for integration tests is **100%** for the impacted integration package/scope.
-- Run integration tests with coverage enabled and do not consider the task complete until the required 100% coverage is confirmed.
+- When adding or updating integration tests, run them with coverage enabled and do not consider the task complete until the required 100% coverage is confirmed.
