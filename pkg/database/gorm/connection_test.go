@@ -9,6 +9,8 @@ import (
 	"errors"
 	"log"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-sql-driver/mysql"
@@ -43,6 +45,21 @@ func (p mockSQLPoolPlugin) Initialize(db *gormdb.DB) error {
 	db.ConnPool = p.pool
 	db.Statement.ConnPool = p.pool
 	return nil
+}
+
+func setupMockSQLPool(t *testing.T, config *gormdb.Config, expectedCloses int) {
+	t.Helper()
+
+	pool, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	for i := 0; i < expectedCloses; i++ {
+		mock.ExpectClose()
+	}
+	t.Cleanup(func() {
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+	plugin := mockSQLPoolPlugin{pool: pool}
+	config.Plugins = map[string]gormdb.Plugin{plugin.Name(): plugin}
 }
 
 func (c failingDBConnector) GetDBConn() (*sql.DB, error) {
@@ -95,6 +112,7 @@ func newConstructorTestConnection(t *testing.T, config *databasegorm.Config, dsn
 
 func TestNewConnectionFromConfig(t *testing.T) {
 	const maxOpenConnections = 5
+	const connectionLifetime = time.Millisecond
 	const query = "SELECT 1"
 	dbConnectionErr := errors.New("failed to retrieve SQL connection")
 	dsnConfig := databasegorm.DSNConfig{
@@ -135,15 +153,7 @@ func TestNewConnectionFromConfig(t *testing.T) {
 			},
 			dsnConfig: dsnConfig,
 			setup: func(t *testing.T, config *gormdb.Config) {
-				pool, mock, err := sqlmock.New()
-				require.NoError(t, err)
-				mock.ExpectClose()
-				mock.ExpectClose()
-				t.Cleanup(func() {
-					require.NoError(t, mock.ExpectationsWereMet())
-				})
-				plugin := mockSQLPoolPlugin{pool: pool}
-				config.Plugins = map[string]gormdb.Plugin{plugin.Name(): plugin}
+				setupMockSQLPool(t, config, 2)
 			},
 			verify: func(t *testing.T, pool *sql.DB) {
 				first, err := pool.Conn(context.Background())
@@ -154,6 +164,28 @@ func TestNewConnectionFromConfig(t *testing.T) {
 				require.NoError(t, second.Close())
 
 				require.Equal(t, 1, pool.Stats().Idle)
+			},
+		},
+		{
+			name: "sets maximum connection lifetime",
+			config: databasegorm.Config{
+				MaxIdleConns:              1,
+				ConnMaxLifetime:           connectionLifetime,
+				SkipInitializeWithVersion: true,
+			},
+			dsnConfig: dsnConfig,
+			setup: func(t *testing.T, config *gormdb.Config) {
+				setupMockSQLPool(t, config, 1)
+			},
+			verify: func(t *testing.T, pool *sql.DB) {
+				conn, err := pool.Conn(context.Background())
+				require.NoError(t, err)
+				time.Sleep(2 * connectionLifetime)
+				require.NoError(t, conn.Close())
+
+				stats := pool.Stats()
+				require.EqualValues(t, 1, stats.MaxLifetimeClosed)
+				require.Zero(t, stats.Idle)
 			},
 		},
 		{
@@ -205,45 +237,47 @@ func TestNewConnectionFromConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var output bytes.Buffer
-			gormConfig := &gormdb.Config{
-				DryRun:               true,
-				DisableAutomaticPing: true,
-				PrepareStmt:          tt.prepareStatements,
-				Logger: logger.New(log.New(&output, "", 0), logger.Config{
-					LogLevel: logger.Silent,
-				}),
-			}
-			if tt.setup != nil {
-				tt.setup(t, gormConfig)
-			}
-			connection, err := newConstructorTestConnection(t, &tt.config, tt.dsnConfig, gormConfig)
-			if tt.expectedError != nil {
-				require.ErrorIs(t, err, tt.expectedError)
-				require.Nil(t, connection)
-				return
-			}
-			if tt.expectedErrorMessage != "" {
-				require.ErrorContains(t, err, tt.expectedErrorMessage)
-				require.Nil(t, connection)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tt.prepareStatements, connection.Db().PrepareStmt)
-			sqlDB, err := connection.Db().DB()
-			require.NoError(t, err)
-			require.Equal(t, tt.maxOpenConnections, sqlDB.Stats().MaxOpenConnections)
+			synctest.Test(t, func(t *testing.T) {
+				var output bytes.Buffer
+				gormConfig := &gormdb.Config{
+					DryRun:               true,
+					DisableAutomaticPing: true,
+					PrepareStmt:          tt.prepareStatements,
+					Logger: logger.New(log.New(&output, "", 0), logger.Config{
+						LogLevel: logger.Silent,
+					}),
+				}
+				if tt.setup != nil {
+					tt.setup(t, gormConfig)
+				}
+				connection, err := newConstructorTestConnection(t, &tt.config, tt.dsnConfig, gormConfig)
+				if tt.expectedError != nil {
+					require.ErrorIs(t, err, tt.expectedError)
+					require.Nil(t, connection)
+					return
+				}
+				if tt.expectedErrorMessage != "" {
+					require.ErrorContains(t, err, tt.expectedErrorMessage)
+					require.Nil(t, connection)
+					return
+				}
+				require.NoError(t, err)
+				require.Equal(t, tt.prepareStatements, connection.Db().PrepareStmt)
+				sqlDB, err := connection.Db().DB()
+				require.NoError(t, err)
+				require.Equal(t, tt.maxOpenConnections, sqlDB.Stats().MaxOpenConnections)
 
-			if tt.verify != nil {
-				tt.verify(t, sqlDB)
-			}
+				if tt.verify != nil {
+					tt.verify(t, sqlDB)
+				}
 
-			require.NoError(t, connection.Db().WithContext(context.Background()).Exec(query).Error)
-			if tt.config.LogQueries {
-				require.Contains(t, output.String(), query)
-			} else {
-				require.Empty(t, output.String())
-			}
+				require.NoError(t, connection.Db().WithContext(context.Background()).Exec(query).Error)
+				if tt.config.LogQueries {
+					require.Contains(t, output.String(), query)
+				} else {
+					require.Empty(t, output.String())
+				}
+			})
 		})
 	}
 }
