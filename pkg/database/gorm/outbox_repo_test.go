@@ -26,13 +26,7 @@ func newOutboxTestConnection(t *testing.T) (*databasegorm.Connection, *outboxRec
 
 	connection, err := databasegorm.NewConnectionFromConfig(
 		&databasegorm.Config{SkipInitializeWithVersion: true},
-		databasegorm.DSNConfig{
-			UserName:     "gorm",
-			Password:     "gorm",
-			DatabaseName: "gorm",
-			Host:         "localhost",
-			Port:         9910,
-		},
+		newTestDSNConfig(),
 		&gormdb.Config{
 			DryRun:                 true,
 			DisableAutomaticPing:   true,

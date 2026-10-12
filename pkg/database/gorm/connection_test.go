@@ -26,6 +26,19 @@ type failingDBConnector struct {
 	err error
 }
 
+type captureDBPlugin struct {
+	db *gormdb.DB
+}
+
+func (p *captureDBPlugin) Name() string {
+	return "capture_db"
+}
+
+func (p *captureDBPlugin) Initialize(db *gormdb.DB) error {
+	p.db = db
+	return nil
+}
+
 type mockSQLPoolPlugin struct {
 	pool *sql.DB
 }
@@ -115,13 +128,7 @@ func TestNewConnectionFromConfig(t *testing.T) {
 	const connectionLifetime = time.Millisecond
 	const query = "SELECT 1"
 	dbConnectionErr := errors.New("failed to retrieve SQL connection")
-	dsnConfig := databasegorm.DSNConfig{
-		UserName:     "gorm",
-		Password:     "gorm",
-		DatabaseName: "gorm",
-		Host:         "localhost",
-		Port:         9910,
-	}
+	dsnConfig := newTestDSNConfig()
 	invalidDSNConfig := dsnConfig
 	invalidDSNConfig.DatabaseName = "gorm?timeout=invalid&"
 
@@ -280,6 +287,83 @@ func TestNewConnectionFromConfig(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestConnectionDbReturnsBaseDB(t *testing.T) {
+	capture := &captureDBPlugin{}
+	connection, err := newConstructorTestConnection(t,
+		&databasegorm.Config{SkipInitializeWithVersion: true},
+		newTestDSNConfig(),
+		&gormdb.Config{
+			DisableAutomaticPing: true,
+			Plugins:              map[string]gormdb.Plugin{capture.Name(): capture},
+		},
+	)
+	require.NoError(t, err)
+
+	require.NotNil(t, capture.db)
+	require.Same(t, capture.db, connection.Db())
+}
+
+func newTransactionTestConnection(t *testing.T) (*databasegorm.Connection, sqlmock.Sqlmock) {
+	t.Helper()
+
+	pool, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	plugin := mockSQLPoolPlugin{pool: pool}
+	connection, err := newConstructorTestConnection(t,
+		&databasegorm.Config{
+			MaxIdleConns:              1,
+			SkipInitializeWithVersion: true,
+		},
+		newTestDSNConfig(),
+		&gormdb.Config{
+			DisableAutomaticPing: true,
+			Plugins:              map[string]gormdb.Plugin{plugin.Name(): plugin},
+		},
+	)
+	require.NoError(t, err)
+	return connection, mock
+}
+
+func TestConnectionDbReturnsActiveTransaction(t *testing.T) {
+	connection, mock := newTransactionTestConnection(t)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	mock.ExpectClose()
+	baseDB := connection.Db()
+
+	err := connection.Transaction(context.Background(), func(_ context.Context) error {
+		transactionDB := connection.Db()
+		require.NotSame(t, baseDB, transactionDB)
+		require.IsType(t, &sql.Tx{}, transactionDB.Statement.ConnPool)
+		require.Same(t, transactionDB, connection.Db())
+		return nil
+	})
+
+	require.NoError(t, err)
+	require.Same(t, baseDB, connection.Db())
+}
+
+func TestConnectionTransactionRollsBackOnCallbackError(t *testing.T) {
+	connection, mock := newTransactionTestConnection(t)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	mock.ExpectClose()
+	baseDB := connection.Db()
+	callbackErr := errors.New("transaction callback failed")
+
+	err := connection.Transaction(context.Background(), func(_ context.Context) error {
+		require.NotSame(t, baseDB, connection.Db())
+		return callbackErr
+	})
+
+	require.ErrorIs(t, err, callbackErr)
+	require.Same(t, baseDB, connection.Db())
 }
 
 func TestConnectionIsDuplicateEntryErr(t *testing.T) {
