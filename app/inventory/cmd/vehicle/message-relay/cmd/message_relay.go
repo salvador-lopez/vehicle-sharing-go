@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -80,13 +81,41 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 		return nil, err
 	}
 
-	admin, err := sarama.NewClusterAdmin(viper.GetStringSlice("kafkaBrokers"), sarama.NewConfig())
+	admin, err := getKafkaClusterAdmin()
 	if err != nil {
 		return nil, err
 	}
 
+	defer func() {
+		if err := admin.Close(); err != nil {
+			logrus.WithError(err).Error("failed to close Kafka cluster admin")
+		}
+	}()
+
+	topics, err := getKafkaTopics()
+	if err != nil {
+		return nil, err
+	}
+
+	var kafkaHeaderMappings []kafka.HeaderMapping
+	if err = viper.UnmarshalKey("kafkaHeaderMappings", &kafkaHeaderMappings); err != nil {
+		return nil, err
+	}
+
+	if err = createMissingTopics(topics, admin); err != nil {
+		return nil, err
+	}
+
+	return kafka.NewEventDispatcher(producer, topics, kafkaHeaderMappings), nil
+}
+
+func getKafkaClusterAdmin() (sarama.ClusterAdmin, error) {
+	return sarama.NewClusterAdmin(viper.GetStringSlice("kafkaBrokers"), sarama.NewConfig())
+}
+
+func getKafkaTopics() ([]kafka.Topic, error) {
 	var kafkaTopics []KafkaTopic
-	if err = viper.UnmarshalKey("kafkaTopics", &kafkaTopics); err != nil {
+	if err := viper.UnmarshalKey("kafkaTopics", &kafkaTopics); err != nil {
 		return nil, err
 	}
 
@@ -102,12 +131,35 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 		})
 	}
 
-	var kafkaHeaderMappings []kafka.HeaderMapping
-	if err = viper.UnmarshalKey("kafkaHeaderMappings", &kafkaHeaderMappings); err != nil {
-		return nil, err
+	return topics, nil
+}
+
+func createMissingTopics(topics []kafka.Topic, admin sarama.ClusterAdmin) error {
+	names := make([]string, 0, len(topics))
+	for _, t := range topics {
+		names = append(names, t.Name)
 	}
 
-	return kafka.NewEventDispatcher(producer, admin, topics, kafkaHeaderMappings)
+	metadata, err := admin.DescribeTopics(names)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range metadata {
+		if !errors.Is(m.Err, sarama.ErrUnknownTopicOrPartition) {
+			continue
+		}
+		for _, t := range topics {
+			if t.Name != m.Name {
+				continue
+			}
+			if err := admin.CreateTopic(t.Name, t.TopicDetail, false); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func getKafkaSyncProducer() (sarama.SyncProducer, error) {

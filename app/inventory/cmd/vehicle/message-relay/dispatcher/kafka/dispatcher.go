@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
@@ -28,29 +27,21 @@ type HeaderMapping struct {
 // Kafka topics and publishing them via a sarama.SyncProducer.
 type EventDispatcher struct {
 	syncProducer   sarama.SyncProducer
-	admin          sarama.ClusterAdmin
 	topics         []Topic
 	headerMappings []HeaderMapping
 }
 
-// NewEventDispatcher creates an EventDispatcher, ensuring all configured topics
-// exist in Kafka before returning.
+// NewEventDispatcher creates an EventDispatcher for the configured topics.
 func NewEventDispatcher(
 	syncProducer sarama.SyncProducer,
-	admin sarama.ClusterAdmin,
 	topics []Topic,
 	headerMappings []HeaderMapping,
-) (*EventDispatcher, error) {
-	if err := createMissingTopics(topics, admin); err != nil {
-		return nil, err
-	}
-
+) *EventDispatcher {
 	return &EventDispatcher{
 		syncProducer:   syncProducer,
-		admin:          admin,
 		topics:         topics,
 		headerMappings: headerMappings,
-	}, nil
+	}
 }
 
 // Dispatch routes the event to every topic whose AggregateType regexp matches
@@ -74,34 +65,6 @@ func (d *EventDispatcher) Dispatch(event relay.OutboxEvent) error {
 		})
 		if err != nil {
 			return err
-		}
-	}
-
-	return nil
-}
-
-func createMissingTopics(topics []Topic, admin sarama.ClusterAdmin) error {
-	names := make([]string, 0, len(topics))
-	for _, t := range topics {
-		names = append(names, t.Name)
-	}
-
-	metadata, err := admin.DescribeTopics(names)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range metadata {
-		if !errors.Is(m.Err, sarama.ErrUnknownTopicOrPartition) {
-			continue
-		}
-		for _, t := range topics {
-			if t.Name != m.Name {
-				continue
-			}
-			if err := admin.CreateTopic(t.Name, t.TopicDetail, false); err != nil {
-				return err
-			}
 		}
 	}
 
