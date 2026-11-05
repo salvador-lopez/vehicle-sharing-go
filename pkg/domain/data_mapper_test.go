@@ -17,13 +17,7 @@ func TestToDataModel(t *testing.T) {
 	id := uuid.New()
 	createdAt := time.Now()
 	updatedAt := createdAt.Add(time.Second)
-	timestamps := []time.Time{createdAt, updatedAt}
-	nextTimestamp := 0
-	aggregate := domain.NewAggregateRoot(id, func() time.Time {
-		timestamp := timestamps[nextTimestamp]
-		nextTimestamp++
-		return timestamp
-	})
+	aggregate := newTestAggregateRoot(id, createdAt, updatedAt)
 
 	result := domain.ToDataModel(aggregate)
 
@@ -42,14 +36,18 @@ func TestFromDataModel(t *testing.T) {
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 	}
-	timestamps := []time.Time{createdAt, updatedAt}
-	nextTimestamp := 0
-	expected := domain.NewAggregateRoot(model.ID, func() time.Time {
-		timestamp := timestamps[nextTimestamp]
-		nextTimestamp++
-		return timestamp
-	})
+	expected := newTestAggregateRoot(model.ID, createdAt, updatedAt)
 	aggregate := domain.FromDataModel(model)
 
 	require.Equal(t, expected, aggregate)
+}
+
+func newTestAggregateRoot(id uuid.UUID, createdAt, updatedAt time.Time) *domain.AggregateRoot {
+	timestamps := []time.Time{createdAt, updatedAt}
+	next := 0
+	return domain.NewAggregateRoot(id, func() time.Time {
+		timestamp := timestamps[next]
+		next++
+		return timestamp
+	})
 }

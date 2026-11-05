@@ -27,16 +27,10 @@ func TestFromDataModel(t *testing.T) {
 			UpdatedAt: updatedAt,
 		},
 	}
-	timestamps := []time.Time{createdAt, updatedAt}
-	nextTimestamp := 0
 	expected := &Car{
-		AggregateRoot: pkgdomain.NewAggregateRoot(id, func() time.Time {
-			timestamp := timestamps[nextTimestamp]
-			nextTimestamp++
-			return timestamp
-		}),
-		vin:   &VIN{number: "4Y1SL65848Z411439"},
-		color: "Spectral Blue",
+		AggregateRoot: newTestAggregateRoot(id, createdAt, updatedAt),
+		vin:           &VIN{number: "4Y1SL65848Z411439"},
+		color:         "Spectral Blue",
 	}
 
 	car := FromDataModel(model)
@@ -48,16 +42,10 @@ func TestToDataModel(t *testing.T) {
 	id := uuid.New()
 	createdAt := time.Now()
 	updatedAt := createdAt.Add(time.Minute)
-	timestamps := []time.Time{createdAt, updatedAt}
-	nextTimestamp := 0
 	car := &Car{
-		AggregateRoot: pkgdomain.NewAggregateRoot(id, func() time.Time {
-			timestamp := timestamps[nextTimestamp]
-			nextTimestamp++
-			return timestamp
-		}),
-		vin:   &VIN{number: "4Y1SL65848Z411439"},
-		color: "Spectral Blue",
+		AggregateRoot: newTestAggregateRoot(id, createdAt, updatedAt),
+		vin:           &VIN{number: "4Y1SL65848Z411439"},
+		color:         "Spectral Blue",
 	}
 	car.AggregateRoot.RecordEvent(uuid.New(), "CarCreatedEvent", "Car", nil, createdAt)
 
@@ -72,4 +60,14 @@ func TestToDataModel(t *testing.T) {
 			UpdatedAt: updatedAt,
 		},
 	}, result)
+}
+
+func newTestAggregateRoot(id uuid.UUID, createdAt, updatedAt time.Time) *pkgdomain.AggregateRoot {
+	timestamps := []time.Time{createdAt, updatedAt}
+	next := 0
+	return pkgdomain.NewAggregateRoot(id, func() time.Time {
+		timestamp := timestamps[next]
+		next++
+		return timestamp
+	})
 }
