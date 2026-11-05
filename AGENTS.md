@@ -52,6 +52,7 @@ The project is organized by application contexts under `app/` (one app per conte
 - Holds persistence implementations (repositories, etc.).
 - **Covered by integration tests** that exercise a real (or containerised) database.
 - Unit-test only when a piece of logic is clearly independent of the database (e.g. pure query-building helpers).
+- **Packages under `database/in-memory/` must be covered by unit tests.** These tests should exercise the in-memory implementation without requiring an external database.
 
 ### `handler/`
 - Holds HTTP controllers/handlers.
