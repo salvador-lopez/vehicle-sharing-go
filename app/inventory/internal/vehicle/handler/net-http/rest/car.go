@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -55,13 +56,15 @@ func (h *CarHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(carProjection)
+	var body bytes.Buffer
+	err = json.NewEncoder(&body).Encode(carProjection)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(rest.NewInternalError())
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(body.Bytes())
 }
 
 func (h *CarHandler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) {

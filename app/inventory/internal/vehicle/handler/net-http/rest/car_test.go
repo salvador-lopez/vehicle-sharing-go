@@ -140,6 +140,7 @@ func (s *carUnitSuite) TestGetErr() {
 		carID           string
 		code            int
 		queryServiceErr error
+		carProjection   *projection.Car
 		sutErrMsg       string
 	}{
 		{
@@ -155,6 +156,17 @@ func (s *carUnitSuite) TestGetErr() {
 			queryServiceErr: errors.New("queryService error"),
 			sutErrMsg:       "{\"error\":\"internal error\"}\n",
 		},
+		{
+			name:  "Timestamp outside JSON year range returns 500",
+			carID: "96194205-a21b-4cb6-b499-74cb1da1a20a",
+			code:  http.StatusInternalServerError,
+			carProjection: &projection.Car{
+				ID:        uuid.MustParse("96194205-a21b-4cb6-b499-74cb1da1a20a"),
+				CreatedAt: time.Time{}.AddDate(10000, 0, 0),
+				VINData:   &projection.VINData{VIN: "4Y1SL65848Z411439"},
+			},
+			sutErrMsg: "{\"error\":\"internal error\"}\n",
+		},
 	}
 
 	for _, tt := range tests {
@@ -165,7 +177,7 @@ func (s *carUnitSuite) TestGetErr() {
 			carID, err := uuid.Parse(tt.carID)
 			s.Require().NoError(err)
 
-			s.mockCarQueryService.EXPECT().Find(s.ctx, carID).Return(nil, tt.queryServiceErr)
+			s.mockCarQueryService.EXPECT().Find(s.ctx, carID).Return(tt.carProjection, tt.queryServiceErr)
 
 			req := httptest.NewRequest(http.MethodGet, "/cars/{id}", nil)
 			req.SetPathValue("id", carID.String())
@@ -174,6 +186,7 @@ func (s *carUnitSuite) TestGetErr() {
 			s.sut.Get(s.ctx, rr, req)
 
 			s.Require().Equal(tt.code, rr.Code)
+			s.Require().Equal("application/json", rr.Header().Get("Content-Type"))
 			s.Require().Equal(tt.sutErrMsg, rr.Body.String())
 		})
 	}
