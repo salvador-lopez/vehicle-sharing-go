@@ -81,11 +81,10 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 		return nil, err
 	}
 
-	admin, err := getKafkaClusterAdmin()
+	admin, err := sarama.NewClusterAdmin(viper.GetStringSlice("kafkaBrokers"), sarama.NewConfig())
 	if err != nil {
 		return nil, err
 	}
-
 	defer func() {
 		if err := admin.Close(); err != nil {
 			logrus.WithError(err).Error("failed to close Kafka cluster admin")
@@ -107,10 +106,6 @@ func getKafkaEventDispatcher() (*kafka.EventDispatcher, error) {
 	}
 
 	return kafka.NewEventDispatcher(producer, topics, kafkaHeaderMappings), nil
-}
-
-func getKafkaClusterAdmin() (sarama.ClusterAdmin, error) {
-	return sarama.NewClusterAdmin(viper.GetStringSlice("kafkaBrokers"), sarama.NewConfig())
 }
 
 func getKafkaTopics() ([]kafka.Topic, error) {
