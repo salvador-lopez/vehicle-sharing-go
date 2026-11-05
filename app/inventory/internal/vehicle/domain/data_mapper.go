@@ -7,7 +7,7 @@ import (
 
 func FromDataModel(m *datamodel.Car) *Car {
 	return &Car{
-		domain.FromModel(m.AggregateRoot),
+		domain.FromDataModel(m.AggregateRoot),
 		&VIN{m.VinNumber},
 		m.Color,
 	}

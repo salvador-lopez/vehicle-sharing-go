@@ -94,12 +94,12 @@ func (s *createCarUnitSuite) TestCreateCar() {
 		VinNumber: validVinNumber,
 		Color:     color,
 		AggregateRoot: &modelpkg.AggregateRoot{
-			ID:             id,
-			CreatedAt:      now,
-			UpdatedAt:      now,
-			RecordedEvents: recordedEvents,
+			ID:        id,
+			CreatedAt: now,
+			UpdatedAt: now,
 		},
 	})
+	expectedCar.RecordEvent(recordedEvent.ID, recordedEvent.EventType, recordedEvent.AggregateType, recordedEvent.Payload, recordedEvent.Timestamp)
 
 	s.mockCarRepo.EXPECT().Create(s.ctx, expectedCar).Return(nil)
 	s.mockPublisher.EXPECT().Publish(s.ctx, recordedEvents).Return(nil)

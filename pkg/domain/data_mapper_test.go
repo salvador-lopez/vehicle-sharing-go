@@ -11,7 +11,6 @@ import (
 
 	"vehicle-sharing-go/pkg/domain"
 	"vehicle-sharing-go/pkg/domain/datamodel"
-	"vehicle-sharing-go/pkg/domain/event"
 )
 
 func TestToDataModel(t *testing.T) {
@@ -35,7 +34,7 @@ func TestToDataModel(t *testing.T) {
 	}, result)
 }
 
-func TestFromModel(t *testing.T) {
+func TestFromDataModel(t *testing.T) {
 	createdAt := time.Now()
 	updatedAt := createdAt.Add(time.Second)
 	model := &datamodel.AggregateRoot{
@@ -43,17 +42,6 @@ func TestFromModel(t *testing.T) {
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 	}
-	model.RecordedEvents = []*event.Event{
-		{
-			ID:            uuid.New(),
-			AggregateID:   model.ID,
-			AggregateType: "Car",
-			EventType:     "CarCreatedEvent",
-			Payload:       map[string]string{"vin": "vehicle-123"},
-			Timestamp:     createdAt,
-		},
-	}
-
 	timestamps := []time.Time{createdAt, updatedAt}
 	nextTimestamp := 0
 	expected := domain.NewAggregateRoot(model.ID, func() time.Time {
@@ -61,10 +49,7 @@ func TestFromModel(t *testing.T) {
 		nextTimestamp++
 		return timestamp
 	})
-	evt := model.RecordedEvents[0]
-	expected.RecordEvent(evt.ID, evt.EventType, evt.AggregateType, evt.Payload, evt.Timestamp)
-
-	aggregate := domain.FromModel(model)
+	aggregate := domain.FromDataModel(model)
 
 	require.Equal(t, expected, aggregate)
 }

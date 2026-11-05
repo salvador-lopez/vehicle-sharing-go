@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"vehicle-sharing-go/pkg/domain/datamodel"
-	"vehicle-sharing-go/pkg/domain/event"
-)
+import "vehicle-sharing-go/pkg/domain/datamodel"
 
 func ToDataModel(a *AggregateRoot) *datamodel.AggregateRoot {
 	return &datamodel.AggregateRoot{
@@ -13,14 +10,8 @@ func ToDataModel(a *AggregateRoot) *datamodel.AggregateRoot {
 	}
 }
 
-func FromModel(aggRootModel *datamodel.AggregateRoot) *AggregateRoot {
-	var recordedEvents []*event.Event
-	for _, evt := range aggRootModel.RecordedEvents {
-		recordedEvents = append(recordedEvents, evt)
-	}
-
+func FromDataModel(dataModel *datamodel.AggregateRoot) *AggregateRoot {
 	return &AggregateRoot{
-		BaseEntity:     &BaseEntity{id: aggRootModel.ID, createdAt: aggRootModel.CreatedAt, updatedAt: aggRootModel.UpdatedAt},
-		recordedEvents: recordedEvents,
+		BaseEntity: &BaseEntity{id: dataModel.ID, createdAt: dataModel.CreatedAt, updatedAt: dataModel.UpdatedAt},
 	}
 }
