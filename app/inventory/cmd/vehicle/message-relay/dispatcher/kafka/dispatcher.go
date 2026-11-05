@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -91,7 +92,7 @@ func createMissingTopics(topics []Topic, admin sarama.ClusterAdmin) error {
 	}
 
 	for _, m := range metadata {
-		if m.Err != sarama.ErrUnknownTopicOrPartition {
+		if !errors.Is(m.Err, sarama.ErrUnknownTopicOrPartition) {
 			continue
 		}
 		for _, t := range topics {
